@@ -1,13 +1,17 @@
 type BankAccountType = "CHECKING" | "$AVING$" | "MONEYMRKT";
 type TransactionType = "DEBIT" | "CREDIT";
 
-export function formatDate(date: Date): string {
+export function formatOFXDate(date: Date): string {
   return date
     .toISOString()
     .replace(/\.\d\d\d/, "")
     .replace(/[-:.]/g, "")
     .replace("T", "")
     .replace("Z", "[0:GMT]");
+}
+
+export function formatFileNameDate(date: Date): string {
+  return date.toISOString().split("T")[0].replace(/-/g, "");
 }
 
 export class OFXTransaction {
@@ -35,7 +39,7 @@ export class OFXTransaction {
     return `
     <STMTTRN>
       <TRNTYPE>${this.type}</TRNTYPE>
-      <DTPOSTED>${formatDate(this.date)}</DTPOSTED>
+      <DTPOSTED>${formatOFXDate(this.date)}</DTPOSTED>
       <TRNAMT>${this.amount}</TRNAMT>
       <FITID>${this.id}</FITID>
       <MEMO>${this.memo}</MEMO>
@@ -57,7 +61,7 @@ export class OFXLedgerBalance {
     return `
     <LEDGERBAL>
       <BALAMT>${this.balance}</BALAMT>
-      <DTASOF>${formatDate(this.date)}</DTASOF>
+      <DTASOF>${formatOFXDate(this.date)}</DTASOF>
     </LEDGERBAL>
     `;
   }
@@ -68,6 +72,12 @@ export interface OFXBankAccountInfo {
   fid: number;
   accountNumber: string;
   branch: string;
+}
+
+export interface OFXCardInfo {
+  brand: string;
+  level: string;
+  number: string;
 }
 
 function outputOFXBase(
@@ -92,7 +102,7 @@ NEWFILEUID:NONE
         <CODE>0</CODE>
         <SEVERITY>INFO</SEVERITY>
       </STATUS>
-      <DTSERVER>${formatDate(date)}</DTSERVER>
+      <DTSERVER>${formatOFXDate(date)}</DTSERVER>
       <LANGUAGE>${language}</LANGUAGE>
       <FI>
         <ORG>${accountInfo.orgName}</ORG>
@@ -105,6 +115,7 @@ NEWFILEUID:NONE
 }
 
 export interface OFXFile {
+  getSuggestedFileName(): string;
   output(): string;
   addTx(tx: OFXTransaction): void;
 }
@@ -134,6 +145,10 @@ export class OFXBankFile {
     this.dateEnd = dateEnd;
   }
 
+  getSuggestedFileName(): string {
+    return `statement-${this.accountInfo.fid}-${this.accountInfo.accountNumber}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
+  }
+
   addTx(tx: OFXTransaction) {
     this.transactions.push(tx);
   }
@@ -156,8 +171,8 @@ export class OFXBankFile {
             <ACCTTYPE>${this.accountType}</ACCTTYPE>
           </BANKACCTFROM>
           <BANKTRANLIST>
-            <DTSTART>${formatDate(this.dateStart)}</DTSTART>
-            <DTEND>${formatDate(this.dateEnd)}</DTEND>
+            <DTSTART>${formatOFXDate(this.dateStart)}</DTSTART>
+            <DTEND>${formatOFXDate(this.dateEnd)}</DTEND>
             ${this.transactions.map((tx) => tx.output()).join("\n")}
           </BANKTRANLIST>
           ${this.balance.output()}
@@ -179,6 +194,7 @@ export class OFXBankFile {
 
 export class OFXCCFile implements OFXFile {
   private accountInfo: OFXBankAccountInfo;
+  private cardInfo: OFXCardInfo;
   private id: string;
   private currency: string;
   private transactions: OFXTransaction[] = [];
@@ -190,6 +206,7 @@ export class OFXCCFile implements OFXFile {
 
   constructor(
     accountInfo: OFXBankAccountInfo,
+    cardInfo: OFXCardInfo,
     id: string,
     currency: string,
     dateStart: Date,
@@ -197,12 +214,18 @@ export class OFXCCFile implements OFXFile {
   ) {
     this.accountInfo = accountInfo;
     this.id = id;
+    this.cardInfo = cardInfo;
     this.currency = currency;
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
   }
 
+  getSuggestedFileName(): string {
+    return `cc-${this.accountInfo.fid}-${this.cardInfo.brand}-${this.cardInfo.level}-${this.cardInfo.number}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
+  }
+
   addTx(tx: OFXTransaction) {
+    tx.amount *= -1;
     this.transactions.push(tx);
   }
 
@@ -221,8 +244,8 @@ export class OFXCCFile implements OFXFile {
             <ACCTID>${this.id}</ACCTID>
           </CCACCTFROM>
           <BANKTRANLIST>
-            <DTSTART>${formatDate(this.dateStart)}</DTSTART>
-            <DTEND>${formatDate(this.dateEnd)}</DTEND>
+            <DTSTART>${formatOFXDate(this.dateStart)}</DTSTART>
+            <DTEND>${formatOFXDate(this.dateEnd)}</DTEND>
             ${this.transactions.map((tx) => tx.output()).join("\n")}
           </BANKTRANLIST>
           ${this.balance.output()}
