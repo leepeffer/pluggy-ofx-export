@@ -1,0 +1,13 @@
+{
+  "name": "@ofx-playground/export",
+  "module": "src/index.ts",
+  "main": "src/index.ts",
+  "type": "module",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@ofx-playground/core": "workspace:*",
+    "dotenv": "^16.4.7"
+  }
+}
