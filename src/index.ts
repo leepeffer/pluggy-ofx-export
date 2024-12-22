@@ -13,7 +13,7 @@ const client = new PluggyClient({
   clientSecret: Bun.env.PLUGGY_CLIENT_SECRET!,
 });
 
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 300;
 
 const itemIds = Bun.env.PLUGGY_ITEM_IDS!.split(",");
 
@@ -122,11 +122,26 @@ async function outputOFXFiles(
 }
 
 if (import.meta.main) {
-  const dateStart = new Date("2024-11-01");
-  const dateEnd = new Date("2024-11-31");
-  const files = await outputOFXFiles(itemIds[1], dateStart, dateEnd);
-  for (const file of files) {
-    console.log(file.getSuggestedFileName());
-    Bun.write(file.getSuggestedFileName(), file.output());
-  }
+  const MONTHS = 3;
+
+  await Promise.all(
+    itemIds.map(async (itemId) => {
+      const now = new Date();
+
+      for (let i = 0; i < MONTHS; i++) {
+        const dateStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const dateEnd = new Date(
+          dateStart.getFullYear(),
+          dateStart.getMonth() + 1,
+          0,
+        );
+
+        const files = await outputOFXFiles(itemId, dateStart, dateEnd);
+        for (const file of files) {
+          console.log(file.getSuggestedFileName());
+          Bun.write(file.getSuggestedFileName(), file.output());
+        }
+      }
+    }),
+  );
 }
