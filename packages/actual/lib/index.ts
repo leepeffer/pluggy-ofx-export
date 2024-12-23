@@ -1,7 +1,7 @@
-import { Client } from "@ofx-playground/core";
+import { Client } from "@pluggy-actual-export/core";
 import * as actual from "@actual-app/api";
 import { APIAccountEntity } from "@actual-app/api/@types/loot-core/server/api-models";
-import { OFXBankFile, OFXCCFile, OFXFile } from "@ofx-playground/core/src/ofx";
+import { OFXBankFile, OFXCCFile, OFXFile } from "@pluggy-actual-export/core/src/ofx";
 import * as fs from "node:fs";
 
 export function rankBestAccounts(file: OFXFile, actualAccounts: APIAccountEntity[]): [string, number][] {
@@ -86,7 +86,7 @@ export async function updateActualBudget() {
     throw new Error(`Missing environment variable ACTUAL_BUDGET_SYNC_ID`);
   }
 
-  const dataDir = "/tmp/ofx-playground-actual";
+  const dataDir = "/tmp/pluggy-actual-export-actual";
   fs.mkdirSync(dataDir, { recursive: true });
 
   await actual.init({

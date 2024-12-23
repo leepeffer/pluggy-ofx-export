@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client } from "@ofx-playground/core";
+import { Client } from "@pluggy-actual-export/core";
 import * as fs from "node:fs";
 
 const clientId = process.env.PLUGGY_CLIENT_ID!;

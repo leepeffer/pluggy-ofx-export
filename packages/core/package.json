@@ -1,5 +1,5 @@
 {
-  "name": "@ofx-playground/core",
+  "name": "@pluggy-actual-export/core",
   "module": "src/index.ts",
   "main": "src/index.ts",
   "type": "module",

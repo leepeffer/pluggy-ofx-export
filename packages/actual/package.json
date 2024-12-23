@@ -1,5 +1,5 @@
 {
-  "name": "@ofx-playground/actual",
+  "name": "@pluggy-actual-export/actual",
   "main": "lib/index.ts",
   "type": "module",
   "peerDependencies": {
@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@actual-app/api": "^24.12.0",
-    "@ofx-playground/core": "*",
+    "@pluggy-actual-export/core": "*",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { APIAccountEntity } from "@actual-app/api/@types/loot-core/server/api-models";
-import { rankBestAccounts } from "@ofx-playground/actual";
-import { OFXBankAccountInfo, OFXBankFile, OFXCCFile } from "@ofx-playground/core/src/ofx";
+import { rankBestAccounts } from "@pluggy-actual-export/actual";
+import { OFXBankAccountInfo, OFXBankFile, OFXCCFile } from "@pluggy-actual-export/core/src/ofx";
 
 test("account ranking", () => {
   const actualAccounts: APIAccountEntity[] = [
