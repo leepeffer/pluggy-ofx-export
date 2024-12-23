@@ -1,6 +1,7 @@
-# ofx-playground
+# Pluggy OFX and Actual Budget exporter
 
-Export transactions from Pluggy accounts to Actual budget and OFX files.
+This project allows you to export transactions from financial institutions in Brazil to [Actual budget](https://actualbudget.org/) and OFX files.
+It uses the free open finance API from [Pluggy](https://www.pluggy.ai/en).
 
 ## Setup
 
@@ -25,12 +26,22 @@ ACTUAL_BUDGET_SYNC_ID=...  # Actual budget sync ID (found in advanced settings)
 
 ### Export transactions from Pluggy accounts to Actual budget
 
+Run the command:
 ```bash
 npm run actual
 ```
 
+The script will try to guess which Actual accounts correspond to your bank/credit card accounts from Pluggy based on a heuristic.
+To make sure this works well, include the following in your Actual account names:
+- Full name of the financial institution
+- Number of the financial institution
+- Last 4 digits of the credit card
+- The words `checking` or `credit card`
+- Brand and level of the credit card
+
 ### Export transactions from Pluggy accounts to OFX files
 
+Run the command:
 ```bash
 npm run export
 ```
