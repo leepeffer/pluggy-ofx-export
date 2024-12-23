@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "actual": "tsx ./packages/actual/bin/index.ts",
-    "export": "tsx ./packages/export/bin/index.ts",
+    "export-actual": "tsx ./packages/export-actual/bin/index.ts",
+    "export-ofx": "tsx ./packages/export-ofx/bin/index.ts",
     "test": "vitest run"
   },
   "workspaces": [

@@ -1,5 +1,5 @@
 {
-  "name": "@pluggy-actual-export/actual",
+  "name": "@pluggy-actual-export/export-actual",
   "main": "lib/index.ts",
   "type": "module",
   "peerDependencies": {

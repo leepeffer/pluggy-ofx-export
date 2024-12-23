@@ -1,5 +1,5 @@
 {
-  "name": "@pluggy-actual-export/export",
+  "name": "@pluggy-actual-export/export-ofx",
   "main": "bin/index.ts",
   "type": "module",
   "peerDependencies": {

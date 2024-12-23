@@ -28,7 +28,7 @@ ACTUAL_BUDGET_SYNC_ID=...  # Actual budget sync ID (found in advanced settings)
 
 Run the command:
 ```bash
-npm run actual
+npm run export-actual
 ```
 
 The script will try to guess which Actual accounts correspond to your bank/credit card accounts from Pluggy based on a heuristic.
@@ -43,13 +43,19 @@ To make sure this works well, include the following in your Actual account names
 
 Run the command:
 ```bash
-npm run export
+npm run export-ofx
 ```
+
+This will export the last 3 months of transactions from each account in Pluggy to different OFX files in the current directory.
 
 ### Deploy AWS lambda that exports transactions from Pluggy to Actual every day
 
 ```bash
 cd packages/cron-aws-lambda
-npx cdk bootstrap # bootstrap CDK if you haven't already
+npx cdk bootstrap # bootstrap AWS CDK if you haven't already
 npx cdk deploy
 ```
+
+This will create a schedule that runs an AWS lambda every day at 00:00 that exports your transactions to Actual budget.
+
+Note: you need to have configured the AWS CLI first.
