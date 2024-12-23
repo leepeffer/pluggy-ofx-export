@@ -16,12 +16,13 @@ npm install
 Create a .env file with the following content:
 
 ```bash
-PLUGGY_CLIENT_ID=...       # Pluggy client ID
-PLUGGY_CLIENT_SECRET=...   # Pluggy client secret
-PLUGGY_ITEM_IDS=...        # comma separated item IDs from Pluggy
-ACTUAL_BUDGET_URL=...      # Actual server URL
-ACTUAL_BUDGET_PASSWORD=... # Actual server password
-ACTUAL_BUDGET_SYNC_ID=...  # Actual budget sync ID (found in advanced settings)
+PLUGGY_CLIENT_ID=...              # Pluggy client ID
+PLUGGY_CLIENT_SECRET=...          # Pluggy client secret
+PLUGGY_ITEM_IDS=...               # comma separated item IDs from Pluggy
+ACTUAL_BUDGET_URL=...             # Actual server URL
+ACTUAL_BUDGET_PASSWORD=...        # Actual server password
+ACTUAL_BUDGET_SYNC_ID=...         # Actual budget sync ID (found in advanced settings)
+ACTUAL_BUDGET_ENCRYPTION_KEY=...  # Actual budget encryption key (optional)
 ```
 
 ### Export transactions from Pluggy accounts to Actual budget

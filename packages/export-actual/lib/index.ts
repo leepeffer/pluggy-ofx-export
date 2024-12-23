@@ -103,7 +103,13 @@ export async function updateActualBudget() {
 
     const itemIds = process.env.PLUGGY_ITEM_IDS?.split(",")!;
 
-    await actual.downloadBudget(process.env.ACTUAL_BUDGET_SYNC_ID!);
+    if (process.env.ACTUAL_BUDGET_ENCRYPTION_KEY) {
+      await actual.downloadBudget(process.env.ACTUAL_BUDGET_SYNC_ID!, {
+        password: process.env.ACTUAL_BUDGET_ENCRYPTION_KEY
+      });
+    } else {
+      await actual.downloadBudget(process.env.ACTUAL_BUDGET_SYNC_ID!);
+    }
 
     await Promise.all(
       itemIds.map(async (itemId) => {
