@@ -1,4 +1,4 @@
-import "dotenv/config";
+import * as dotenv from "dotenv";
 import * as cdk from 'aws-cdk-lib';
 import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -6,9 +6,15 @@ import { Construct } from 'constructs';
 import { Rule, Schedule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 
+dotenv.config({ path: __dirname + "/../../../.env" });
+
 export class ActualImportCronStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    if (!process.env.PLUGGY_CLIENT_ID) {
+      throw new Error("missing environment variable PLUGGY_CLIENT_ID");
+    }
 
     const fn = new NodejsFunction(this, "ActualImportLambda", {
       entry: "lambda/index.ts",
