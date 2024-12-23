@@ -24,7 +24,7 @@ await Promise.all(
 
       const files = await client.outputOFXFiles(itemId, dateStart, dateEnd);
       for (const file of files) {
-        console.log(file.getSuggestedFileName());
+        console.log(`Writing file ${file.getSuggestedFileName()}`);
         fs.writeFileSync(file.getSuggestedFileName(), file.output());
       }
     }

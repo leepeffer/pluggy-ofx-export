@@ -1,6 +1,15 @@
 {
   "private": true,
+  "scripts": {
+    "actual": "tsx ./packages/actual/bin/index.ts",
+    "export": "tsx ./packages/export/bin/index.ts",
+    "test": "vitest run"
+  },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "devDependencies": {
+    "tsx": "^4",
+    "vitest": "^2"
+  }
 }

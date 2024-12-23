@@ -56,14 +56,12 @@ export class Client {
 
     return await Promise.all(
       accounts.results.map(async (acc) => {
-        console.log(acc);
-
         let ofxFile;
         switch (acc.type) {
           case "BANK":
             ofxFile = new OFXBankFile(
-              bankInfo,
               "CHECKING",
+              bankInfo,
               acc.currencyCode,
               dateStart,
               dateEnd,
@@ -71,13 +69,13 @@ export class Client {
             break;
           case "CREDIT":
             ofxFile = new OFXCCFile(
-              bankInfo,
+              acc.id,
               {
                 brand: acc.creditData!.brand ?? "Unknown",
                 level: acc.creditData!.level ?? "Unknown",
                 number: acc.number,
               },
-              acc.id,
+              bankInfo,
               acc.currencyCode,
               dateStart,
               dateEnd,
@@ -101,7 +99,6 @@ export class Client {
         const txFilter = getFilterForBank(bankInfo.fid);
 
         for (let tx of txs.results) {
-          console.log(tx);
           if (txFilter) {
             const newTx = txFilter(tx);
             if (newTx) {

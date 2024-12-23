@@ -1,12 +1,16 @@
 {
-  "name": "@ofx-playground/export",
-  "main": "bin/index.ts",
+  "name": "@ofx-playground/actual",
+  "main": "lib/index.ts",
   "type": "module",
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@actual-app/api": "^24.12.0",
     "@ofx-playground/core": "*",
     "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "vitest": "^2"
   }
 }

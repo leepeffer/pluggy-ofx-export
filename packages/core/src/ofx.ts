@@ -114,46 +114,55 @@ NEWFILEUID:NONE
 </OFX>`;
 }
 
-export interface OFXFile {
-  getSuggestedFileName(): string;
-  output(): string;
-  addTx(tx: OFXTransaction): void;
-}
+export abstract class OFXFile {
+  protected accountInfo: OFXBankAccountInfo;
+  protected currency: string;
+  protected transactions: OFXTransaction[] = [];
+  protected dateServer: Date = new Date();
+  protected dateStart: Date;
+  protected dateEnd: Date;
+  protected language: string = "POR";
+  protected balance: OFXLedgerBalance = new OFXLedgerBalance(0, new Date());
 
-export class OFXBankFile {
-  private accountInfo: OFXBankAccountInfo;
-  private accountType: BankAccountType;
-  private currency: string;
-  private transactions: OFXTransaction[] = [];
-  private dateServer: Date = new Date();
-  private dateStart: Date;
-  private dateEnd: Date;
-  private language: string = "POR";
-  private balance: OFXLedgerBalance = new OFXLedgerBalance(0, new Date());
-
-  constructor(
+  protected constructor(
     accountInfo: OFXBankAccountInfo,
-    accountType: BankAccountType,
     currency: string,
     dateStart: Date,
     dateEnd: Date,
   ) {
     this.accountInfo = accountInfo;
     this.currency = currency;
-    this.accountType = accountType;
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
   }
 
-  getSuggestedFileName(): string {
+  abstract getSuggestedFileName(): string;
+  abstract output(): string;
+
+  getBankAccountInfo(): OFXBankAccountInfo { return this.accountInfo; }
+  addTx(tx: OFXTransaction) { this.transactions.push(tx); }
+  getTransactions(): OFXTransaction[] { return this.transactions;  }
+}
+
+export class OFXBankFile extends OFXFile {
+  private accountType: BankAccountType;
+
+  constructor(
+    accountType: BankAccountType,
+    accountInfo: OFXBankAccountInfo,
+    currency: string,
+    dateStart: Date,
+    dateEnd: Date,
+  ) {
+    super(accountInfo, currency, dateStart, dateEnd);
+    this.accountType = accountType;
+  }
+
+  override getSuggestedFileName(): string {
     return `statement-${this.accountInfo.fid}-${this.accountInfo.accountNumber}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
   }
 
-  addTx(tx: OFXTransaction) {
-    this.transactions.push(tx);
-  }
-
-  outputBankMsg(): string {
+  private outputBankMsg(): string {
     return `
     <BANKMSGSRSV1>
       <STMTTRNRS>
@@ -182,7 +191,7 @@ export class OFXBankFile {
     `;
   }
 
-  output(): string {
+  override output(): string {
     return outputOFXBase(
       this.accountInfo,
       this.dateServer,
@@ -192,42 +201,33 @@ export class OFXBankFile {
   }
 }
 
-export class OFXCCFile implements OFXFile {
-  private accountInfo: OFXBankAccountInfo;
+export class OFXCCFile extends OFXFile {
   private cardInfo: OFXCardInfo;
   private id: string;
-  private currency: string;
-  private transactions: OFXTransaction[] = [];
-  private dateServer: Date = new Date();
-  private dateStart: Date;
-  private dateEnd: Date;
-  private language: string = "POR";
-  private balance: OFXLedgerBalance = new OFXLedgerBalance(0, new Date());
 
   constructor(
-    accountInfo: OFXBankAccountInfo,
-    cardInfo: OFXCardInfo,
     id: string,
+    cardInfo: OFXCardInfo,
+    accountInfo: OFXBankAccountInfo,
     currency: string,
     dateStart: Date,
     dateEnd: Date,
   ) {
-    this.accountInfo = accountInfo;
+    super(accountInfo, currency, dateStart, dateEnd);
     this.id = id;
     this.cardInfo = cardInfo;
-    this.currency = currency;
-    this.dateStart = dateStart;
-    this.dateEnd = dateEnd;
   }
 
-  getSuggestedFileName(): string {
+  override getSuggestedFileName(): string {
     return `cc-${this.accountInfo.fid}-${this.cardInfo.brand}-${this.cardInfo.level}-${this.cardInfo.number}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
   }
 
-  addTx(tx: OFXTransaction) {
+  override addTx(tx: OFXTransaction) {
     tx.amount *= -1;
     this.transactions.push(tx);
   }
+
+  getCardInfo() { return this.cardInfo };
 
   outputCCMsg(): string {
     return `
@@ -255,7 +255,7 @@ export class OFXCCFile implements OFXFile {
     `;
   }
 
-  output(): string {
+  override output(): string {
     return outputOFXBase(
       this.accountInfo,
       this.dateServer,
