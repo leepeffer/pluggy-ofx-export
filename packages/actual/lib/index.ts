@@ -15,7 +15,6 @@ export function rankBestAccounts(file: OFXFile, actualAccounts: APIAccountEntity
   }
 
   for (const acc of actualAccounts) {
-    console.log(`Actual account: ${acc}`);
     const lowercaseName = acc.name.toLowerCase();
 
     const orgNameWords = file.getBankAccountInfo().orgName.toLowerCase().split(" ");
