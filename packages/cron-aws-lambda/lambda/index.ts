@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { handle } from 'hono/aws-lambda';
-import { updateActualBudget } from "@pluggy-actual-export/actual";
+import { updateActualBudget } from "@pluggy-actual-export/export-actual";
 
 const app = new Hono();
 

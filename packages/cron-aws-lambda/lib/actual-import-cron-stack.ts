@@ -34,6 +34,7 @@ export class ActualImportCronStack extends cdk.Stack {
         ACTUAL_BUDGET_URL: process.env.ACTUAL_BUDGET_URL!,
         ACTUAL_BUDGET_PASSWORD: process.env.ACTUAL_BUDGET_PASSWORD!,
         ACTUAL_BUDGET_SYNC_ID: process.env.ACTUAL_BUDGET_SYNC_ID!,
+        ACTUAL_BUDGET_ENCRYPTION_KEY: process.env.ACTUAL_BUDGET_ENCRYPTION_KEY!,
       }
     });
 
