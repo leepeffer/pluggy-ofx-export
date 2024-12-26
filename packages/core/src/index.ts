@@ -47,11 +47,15 @@ export class Client {
     dateEnd: Date,
   ): Promise<OFXFile[]> {
     const accounts = await this.client.fetchAccounts(itemId);
+    if (accounts.results.length === 0) {
+      console.log(`No accounts found for itemId: ${itemId}`);
+      return [];
+    }
 
     const bankInfo = this.findBankInfo(accounts.results);
 
     if (!bankInfo) {
-      throw new Error("Bank info not found");
+      throw new Error(`Bank info not found for the accounts of itemId ${itemId}: ${accounts.results}`);
     }
 
     return await Promise.all(

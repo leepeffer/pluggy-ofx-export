@@ -32,6 +32,10 @@ export function rankBestAccounts(file: OFXFile, actualAccounts: APIAccountEntity
       scores.set(acc.id, scores.get(acc.id)! + 1);
     }
 
+    if (lowercaseName.includes(file.getBankAccountInfo().accountNumber.toString())){
+      scores.set(acc.id, scores.get(acc.id)! + 4);
+    }
+
     const checkingRegex = /\b(checking)\b/g;
     const ccRegex = /\b(cc|credit|card)\b/g;
     if (file instanceof OFXBankFile) {
@@ -111,34 +115,38 @@ export async function updateActualBudget() {
       await actual.downloadBudget(process.env.ACTUAL_BUDGET_SYNC_ID!);
     }
 
+    const actualAccounts = await actual.getAccounts();
+
+    const now = new Date();
+
+    const dateStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dateEnd = new Date(dateStart.getFullYear(), dateStart.getMonth() + 1, 0);
+
     await Promise.all(
       itemIds.map(async (itemId) => {
-        const now = new Date();
+        try {
+          const files = await client.outputOFXFiles(itemId, dateStart, dateEnd);
+          for (const file of files) {
+            const actualAccountID = findBestMatchingActualAccount(file, actualAccounts);
+            if (!actualAccountID) {
+              console.error(`Could not find account for file ${file.getSuggestedFileName()}`);
+              continue;
+            }
 
-        const dateStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const dateEnd = new Date(dateStart.getFullYear(), dateStart.getMonth() + 1, 0);
+            const actualAccount = actualAccounts.find(acc => acc.id === actualAccountID)!;
+            console.log(`Found matching account for ${file.getSuggestedFileName()}: ${actualAccount}`)
 
-        const actualAccounts = await actual.getAccounts();
-
-        const files = await client.outputOFXFiles(itemId, dateStart, dateEnd);
-        for (const file of files) {
-          const actualAccountID = findBestMatchingActualAccount(file, actualAccounts);
-          if (!actualAccountID) {
-            console.error(`Could not find account for file ${file.getSuggestedFileName()}`);
-            continue;
+            await actual.importTransactions(actualAccountID, file.getTransactions().map(tx => ({
+              account: actualAccountID,
+              date: tx.date,
+              imported_id: tx.id,
+              payee_name: tx.memo,
+              imported_payee: tx.memo,
+              amount: Math.trunc(tx.amount * 100),
+            })));
           }
-
-          const actualAccount = actualAccounts.find(acc => acc.id === actualAccountID)!;
-          console.log(`Found matching account for ${file.getSuggestedFileName()}: ${actualAccount}`)
-
-          await actual.importTransactions(actualAccountID, file.getTransactions().map(tx => ({
-            account: actualAccountID,
-            date: tx.date,
-            imported_id: tx.id,
-            payee_name: tx.memo,
-            imported_payee: tx.memo,
-            amount: Math.trunc(tx.amount * 100),
-          })));
+        } catch(err) {
+          console.error(`Failed updating data for itemId ${itemId}: ${err}`)
         }
       }),
     );
