@@ -117,10 +117,8 @@ export async function updateActualBudget() {
 
     const actualAccounts = await actual.getAccounts();
 
-    const now = new Date();
-
-    const dateStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const dateEnd = new Date(dateStart.getFullYear(), dateStart.getMonth() + 1, 0);
+    const dateEnd = new Date();
+    const dateStart = new Date(new Date().setDate(dateEnd.getDate() - 30)); // 30 days agO
 
     await Promise.all(
       itemIds.map(async (itemId) => {
