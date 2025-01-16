@@ -5,7 +5,7 @@ import { updateActualBudget } from "@pluggy-actual-export/export-actual";
 const app = new Hono();
 
 app.get('/', async (c) => {
-  await updateActualBudget();
+  await updateActualBudget({ maxRetries: 3 });
   return c.json({ message: 'Imported items successfully.' });
 });
 

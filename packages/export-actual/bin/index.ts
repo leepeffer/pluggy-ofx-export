@@ -1,4 +1,4 @@
 import "dotenv/config";
 import { updateActualBudget } from "../lib";
 
-await updateActualBudget();
+await updateActualBudget({ maxRetries: 3 });

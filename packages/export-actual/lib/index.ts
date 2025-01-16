@@ -26,13 +26,13 @@ export function rankBestAccounts(file: OFXFile, actualAccounts: APIAccountEntity
 
     if (lowercaseName.includes(file.getBankAccountInfo().fid.toString().padStart(4, "0"))) {
       scores.set(acc.id, scores.get(acc.id)! + 4);
-    } else if (lowercaseName.includes(file.getBankAccountInfo().fid.toString().padStart(3, "0"))){
+    } else if (lowercaseName.includes(file.getBankAccountInfo().fid.toString().padStart(3, "0"))) {
       scores.set(acc.id, scores.get(acc.id)! + 3);
-    } else if (lowercaseName.includes(file.getBankAccountInfo().fid.toString())){
+    } else if (lowercaseName.includes(file.getBankAccountInfo().fid.toString())) {
       scores.set(acc.id, scores.get(acc.id)! + 1);
     }
 
-    if (lowercaseName.includes(file.getBankAccountInfo().accountNumber.toString())){
+    if (lowercaseName.includes(file.getBankAccountInfo().accountNumber.toString())) {
       scores.set(acc.id, scores.get(acc.id)! + 4);
     }
 
@@ -79,7 +79,7 @@ export function findBestMatchingActualAccount(file: OFXFile, actualAccounts: API
   return sortedEntries[0]?.[0];
 }
 
-export async function updateActualBudget() {
+async function updateActualBudgetInternal() {
   if (!process.env.PLUGGY_CLIENT_ID) {
     throw new Error(`Missing environment variable PLUGGY_CLIENT_ID`);
   }
@@ -143,14 +143,37 @@ export async function updateActualBudget() {
               amount: Math.trunc(tx.amount * 100),
             })));
           }
-        } catch(err) {
+        } catch (err) {
           console.error(`Failed updating data for itemId ${itemId}: ${err}`)
         }
       }),
     );
-  } catch(err) {
+  } catch (err) {
     console.error(err);
   }
 
   await actual.shutdown();
+}
+
+export async function updateActualBudget(
+  { maxRetries }: { maxRetries: number } = { maxRetries: 1 }
+) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      console.log(`Attempt ${i + 1} of ${maxRetries}`);
+      await updateActualBudgetInternal();
+      break;
+    } catch (err) {
+      console.error(`Attempt ${i + 1} failed: ${err}`);
+    }
+
+    // Sleep before retrying
+    const RETRY_WAIT_TIME_MS = 5000;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT_TIME_MS));
+
+    if (i === (maxRetries - 1)) {
+      throw new Error("Maximum number of retries exceeded");
+    }
+  }
+
 }
