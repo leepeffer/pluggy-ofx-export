@@ -6,7 +6,7 @@ const app = new Hono();
 
 app.get('/', async (c) => {
   await updateActualBudget();
-  c.json({ message: 'Imported!' });
+  return c.json({ message: 'Imported items successfully.' });
 });
 
 export const handler = handle(app);
