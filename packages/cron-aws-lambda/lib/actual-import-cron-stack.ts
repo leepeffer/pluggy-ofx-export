@@ -22,7 +22,10 @@ export class ActualImportCronStack extends cdk.Stack {
       bundling: {
         nodeModules: ["@actual-app/api"],
         forceDockerBundling: true,
-        platform: "linux/arm64"
+        platform: "linux/arm64",
+        dockerImage: cdk.DockerImage.fromBuild("lambda", {
+          platform: "linux/arm64",
+        }),
       },
       architecture: Architecture.ARM_64,
       runtime: Runtime.NODEJS_22_X,

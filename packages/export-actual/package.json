@@ -1,13 +1,14 @@
 {
   "name": "@pluggy-actual-export/export-actual",
+  "version": "0.1.0",
   "main": "lib/index.ts",
   "type": "module",
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@actual-app/api": "^24.12.0",
-    "@pluggy-actual-export/core": "*",
+    "@actual-app/api": "^25.1.0",
+    "@pluggy-actual-export/core": "workspace:^",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {

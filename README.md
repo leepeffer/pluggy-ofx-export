@@ -10,7 +10,7 @@ It uses the free open finance API from [Pluggy](https://www.pluggy.ai/en).
 Run:
 
 ```bash
-npm install
+pnpm install
 ```
 
 Create a .env file with the following content:
@@ -29,7 +29,7 @@ ACTUAL_BUDGET_ENCRYPTION_KEY=...  # Actual budget encryption key (optional)
 
 Run the command:
 ```bash
-npm run export-actual
+pnpm run export-actual
 ```
 
 The script will try to guess which Actual accounts correspond to your bank/credit card accounts from Pluggy based on a heuristic.
@@ -44,7 +44,7 @@ To make sure this works well, include the following in your Actual account names
 
 Run the command:
 ```bash
-npm run export-ofx
+pnpm run export-ofx
 ```
 
 This will export the last 3 months of transactions from each account in Pluggy to different OFX files in the current directory.
