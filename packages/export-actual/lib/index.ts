@@ -1,10 +1,17 @@
 import { Client } from "@pluggy-actual-export/core";
 import * as actual from "@actual-app/api";
 import { APIAccountEntity } from "@actual-app/api/@types/loot-core/server/api-models";
-import { OFXBankFile, OFXCCFile, OFXFile } from "@pluggy-actual-export/core/src/ofx";
+import {
+  OFXBankFile,
+  OFXCCFile,
+  OFXFile,
+} from "@pluggy-actual-export/core/src/ofx";
 import * as fs from "node:fs";
 
-export function rankBestAccounts(file: OFXFile, actualAccounts: APIAccountEntity[]): [string, number][] {
+export function rankBestAccounts(
+  file: OFXFile,
+  actualAccounts: APIAccountEntity[],
+): [string, number][] {
   if (actualAccounts.length === 0) {
     return [];
   }
@@ -17,22 +24,37 @@ export function rankBestAccounts(file: OFXFile, actualAccounts: APIAccountEntity
   for (const acc of actualAccounts) {
     const lowercaseName = acc.name.toLowerCase();
 
-    const orgNameWords = file.getBankAccountInfo().orgName.toLowerCase().split(" ");
+    const orgNameWords = file
+      .getBankAccountInfo()
+      .orgName.toLowerCase()
+      .split(" ");
     for (const word of orgNameWords) {
       if (lowercaseName.includes(word)) {
         scores.set(acc.id, scores.get(acc.id)! + 1);
       }
     }
 
-    if (lowercaseName.includes(file.getBankAccountInfo().fid.toString().padStart(4, "0"))) {
+    if (
+      lowercaseName.includes(
+        file.getBankAccountInfo().fid.toString().padStart(4, "0"),
+      )
+    ) {
       scores.set(acc.id, scores.get(acc.id)! + 4);
-    } else if (lowercaseName.includes(file.getBankAccountInfo().fid.toString().padStart(3, "0"))) {
+    } else if (
+      lowercaseName.includes(
+        file.getBankAccountInfo().fid.toString().padStart(3, "0"),
+      )
+    ) {
       scores.set(acc.id, scores.get(acc.id)! + 3);
-    } else if (lowercaseName.includes(file.getBankAccountInfo().fid.toString())) {
+    } else if (
+      lowercaseName.includes(file.getBankAccountInfo().fid.toString())
+    ) {
       scores.set(acc.id, scores.get(acc.id)! + 1);
     }
 
-    if (lowercaseName.includes(file.getBankAccountInfo().accountNumber.toString())) {
+    if (
+      lowercaseName.includes(file.getBankAccountInfo().accountNumber.toString())
+    ) {
       scores.set(acc.id, scores.get(acc.id)! + 4);
     }
 
@@ -69,7 +91,10 @@ export function rankBestAccounts(file: OFXFile, actualAccounts: APIAccountEntity
   return sortedEntries;
 }
 
-export function findBestMatchingActualAccount(file: OFXFile, actualAccounts: APIAccountEntity[]): string | undefined {
+export function findBestMatchingActualAccount(
+  file: OFXFile,
+  actualAccounts: APIAccountEntity[],
+): string | undefined {
   const sortedEntries = rankBestAccounts(file, actualAccounts);
   if (sortedEntries.length > 1) {
     if (sortedEntries[0][1] === sortedEntries[1][1]) {
@@ -109,7 +134,7 @@ export async function updateActualBudget() {
 
     if (process.env.ACTUAL_BUDGET_ENCRYPTION_KEY) {
       await actual.downloadBudget(process.env.ACTUAL_BUDGET_SYNC_ID!, {
-        password: process.env.ACTUAL_BUDGET_ENCRYPTION_KEY
+        password: process.env.ACTUAL_BUDGET_ENCRYPTION_KEY,
       });
     } else {
       await actual.downloadBudget(process.env.ACTUAL_BUDGET_SYNC_ID!);
@@ -125,26 +150,58 @@ export async function updateActualBudget() {
         try {
           const files = await client.outputOFXFiles(itemId, dateStart, dateEnd);
           for (const file of files) {
-            const actualAccountID = findBestMatchingActualAccount(file, actualAccounts);
+            const actualAccountID = findBestMatchingActualAccount(
+              file,
+              actualAccounts,
+            );
             if (!actualAccountID) {
-              console.error(`Could not find account for file ${file.getSuggestedFileName()}`);
+              console.error(
+                `Could not find account for file ${file.getSuggestedFileName()}`,
+              );
               continue;
             }
 
-            const actualAccount = actualAccounts.find(acc => acc.id === actualAccountID)!;
-            console.log(`Found matching account for ${file.getSuggestedFileName()}: ${actualAccount}`)
+            const actualAccount = actualAccounts.find(
+              (acc) => acc.id === actualAccountID,
+            )!;
+            console.log(
+              `Found matching account for ${file.getSuggestedFileName()}: ${actualAccount}`,
+            );
 
-            await actual.importTransactions(actualAccountID, file.getTransactions().map(tx => ({
-              account: actualAccountID,
-              date: tx.date,
-              imported_id: tx.id,
-              payee_name: tx.memo,
-              imported_payee: tx.memo,
-              amount: Math.trunc(tx.amount * 100),
-            })));
+            await actual.importTransactions(
+              actualAccountID,
+              file.getTransactions().map((tx) => ({
+                account: actualAccountID,
+                date: tx.date,
+                imported_id: tx.id,
+                payee_name: tx.memo,
+                imported_payee: tx.memo,
+                amount: Math.trunc(tx.amount * 100),
+              })),
+            );
+
+            const balance = file.getBalance();
+            if (balance) {
+              const actualBalance =
+                await actual.getAccountBalance(actualAccountID);
+              const roundedBalance = Math.trunc(balance.balance * 100);
+              if (actualBalance !== roundedBalance) {
+                const diff = roundedBalance - actualBalance;
+
+                // Create reconciliation transaction
+                await actual.addTransactions(actualAccountID, [
+                  {
+                    account: actualAccountID,
+                    date: balance.date,
+                    amount: diff,
+                    notes: "Reconciliation from Pluggy",
+                  },
+                ]);
+              }
+            }
           }
         } catch (err) {
-          console.error(`Failed updating data for itemId ${itemId}: ${err}`)
+          console.error(`Failed updating data for itemId ${itemId}: ${err}`);
         }
       }),
     );

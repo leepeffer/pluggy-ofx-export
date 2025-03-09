@@ -122,7 +122,7 @@ export abstract class OFXFile {
   protected dateStart: Date;
   protected dateEnd: Date;
   protected language: string = "POR";
-  protected balance: OFXLedgerBalance = new OFXLedgerBalance(0, new Date());
+  protected balance?: OFXLedgerBalance;
 
   protected constructor(
     accountInfo: OFXBankAccountInfo,
@@ -139,9 +139,22 @@ export abstract class OFXFile {
   abstract getSuggestedFileName(): string;
   abstract output(): string;
 
-  getBankAccountInfo(): OFXBankAccountInfo { return this.accountInfo; }
-  addTx(tx: OFXTransaction) { this.transactions.push(tx); }
-  getTransactions(): OFXTransaction[] { return this.transactions;  }
+  getBankAccountInfo(): OFXBankAccountInfo {
+    return this.accountInfo;
+  }
+  getTransactions(): OFXTransaction[] {
+    return this.transactions;
+  }
+
+  addTx(tx: OFXTransaction) {
+    this.transactions.push(tx);
+  }
+  setBalance(balance: number, date: Date) {
+    this.balance = new OFXLedgerBalance(balance, date);
+  }
+  getBalance(): OFXLedgerBalance | undefined {
+    return this.balance;
+  }
 }
 
 export class OFXBankFile extends OFXFile {
@@ -184,7 +197,7 @@ export class OFXBankFile extends OFXFile {
             <DTEND>${formatOFXDate(this.dateEnd)}</DTEND>
             ${this.transactions.map((tx) => tx.output()).join("\n")}
           </BANKTRANLIST>
-          ${this.balance.output()}
+          ${this.balance?.output()}
         </STMTRS>
       </STMTTRNRS>
     </BANKMSGSRSV1>
@@ -227,7 +240,9 @@ export class OFXCCFile extends OFXFile {
     this.transactions.push(tx);
   }
 
-  getCardInfo() { return this.cardInfo };
+  getCardInfo() {
+    return this.cardInfo;
+  }
 
   outputCCMsg(): string {
     return `
@@ -248,7 +263,7 @@ export class OFXCCFile extends OFXFile {
             <DTEND>${formatOFXDate(this.dateEnd)}</DTEND>
             ${this.transactions.map((tx) => tx.output()).join("\n")}
           </BANKTRANLIST>
-          ${this.balance.output()}
+          ${this.balance?.output()}
         </CCSTMTRS>
       </CCSTMTTRNRS>
     </CREDITCARDMSGSRSV1>

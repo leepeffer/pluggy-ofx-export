@@ -55,7 +55,9 @@ export class Client {
     const bankInfo = this.findBankInfo(accounts.results);
 
     if (!bankInfo) {
-      throw new Error(`Bank info not found for the accounts of itemId ${itemId}: ${accounts.results}`);
+      throw new Error(
+        `Bank info not found for the accounts of itemId ${itemId}: ${accounts.results}`,
+      );
     }
 
     return await Promise.all(
@@ -120,6 +122,13 @@ export class Client {
             tx.date,
           );
           ofxFile.addTx(ofxTx);
+        }
+
+        if (dateEnd.toDateString() === new Date().toDateString()) {
+          ofxFile.setBalance(
+            acc.type === "CREDIT" ? -acc.balance : acc.balance,
+            dateEnd,
+          );
         }
 
         return ofxFile;
