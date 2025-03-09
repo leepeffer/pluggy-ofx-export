@@ -5,8 +5,8 @@ import {
   OFXCCFile,
   type OFXFile,
   OFXTransaction,
-} from "./ofx.ts";
-import { getFilterForBank } from "./tx_filters.ts";
+} from "./ofx";
+import { getFilterForBank } from "./tx_filters";
 
 const PAGE_SIZE = 300;
 

@@ -1,4 +1,4 @@
-import { formatOFXDate } from "../src/ofx.ts";
+import { formatOFXDate } from "../src/ofx";
 import { expect, test } from "vitest";
 
 test("ofx date format", () => {

@@ -79,7 +79,7 @@ export function findBestMatchingActualAccount(file: OFXFile, actualAccounts: API
   return sortedEntries[0]?.[0];
 }
 
-async function updateActualBudgetInternal() {
+export async function updateActualBudget() {
   if (!process.env.PLUGGY_CLIENT_ID) {
     throw new Error(`Missing environment variable PLUGGY_CLIENT_ID`);
   }
@@ -153,27 +153,4 @@ async function updateActualBudgetInternal() {
   }
 
   await actual.shutdown();
-}
-
-export async function updateActualBudget(
-  { maxRetries }: { maxRetries: number } = { maxRetries: 1 }
-) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      console.log(`Attempt ${i + 1} of ${maxRetries}`);
-      await updateActualBudgetInternal();
-      break;
-    } catch (err) {
-      console.error(`Attempt ${i + 1} failed: ${err}`);
-    }
-
-    // Sleep before retrying
-    const RETRY_WAIT_TIME_MS = 5000;
-    await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT_TIME_MS));
-
-    if (i === (maxRetries - 1)) {
-      throw new Error("Maximum number of retries exceeded");
-    }
-  }
-
 }
