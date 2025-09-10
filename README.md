@@ -1,5 +1,7 @@
 # Pluggy OFX Exporter
 
+> **⚠️ Warning**: This was entirely vibe coded by someone untrained in computer science. Be warned.
+
 This project allows you to export transactions from financial institutions in Brazil to OFX files.
 It uses the free open finance API from [Pluggy](https://www.pluggy.ai/en).
 
@@ -104,3 +106,5 @@ If you're planning to make this repository public, ensure:
 3. Navigate to the API section
 4. Generate your Client ID and Client Secret
 5. Connect your financial institutions to get Item IDs
+
+**📚 Helpful Tutorial**: For a detailed step-by-step guide on setting up Pluggy credentials, check out the [Actual Budget Pluggy.ai Setup Guide](https://actualbudget.org/docs/experimental/pluggyai) - it provides excellent instructions for the entire process!
