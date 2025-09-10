@@ -939,13 +939,18 @@
                 if (data.success) {
                     generatedFiles = data.files;
                     
+                    console.log('Export successful, files received:', data.files);
+                    console.log('Number of files:', data.files.length);
+                    
                     if (data.files.length === 1) {
                         // Single file - download directly
+                        console.log('Single file download path');
                         showStatus('success', `Successfully generated ${data.files.length} OFX file`);
                         await downloadFile(data.files[0].content, data.files[0].fileName);
                         showStatus('success', `Downloaded ${data.files[0].fileName} to your Downloads folder`);
                     } else {
                         // Multiple files - create and download ZIP
+                        console.log('Multiple files ZIP download path');
                         showStatus('success', `Successfully generated ${data.files.length} OFX files`);
                         await downloadZipFile(data.files);
                         showStatus('success', `Downloaded ${data.files.length} OFX files as ZIP to your Downloads folder`);
@@ -964,7 +969,7 @@
         }
 
         // Download a file to the user's Downloads folder
-        function downloadFile(content, filename) {
+        async function downloadFile(content, filename) {
             const blob = new Blob([content], { type: 'application/x-ofx' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -979,6 +984,9 @@
         // Download multiple files as a ZIP
         async function downloadZipFile(files) {
             try {
+                console.log('downloadZipFile called with files:', files);
+                console.log('Number of files:', files?.length);
+                
                 const response = await fetch('/api/export/zip', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

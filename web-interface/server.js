@@ -375,6 +375,8 @@ app.post('/api/export', async (req, res) => {
         // Process each selected account
         for (const account of selectedAccounts) {
             try {
+                console.log(`Processing account: ${account.name} (${account.id})`);
+                
                 // Find the item ID for this account
                 let accountItemId = null;
                 for (const itemId of credentials.itemIds) {
@@ -385,17 +387,22 @@ app.post('/api/export', async (req, res) => {
                             break;
                         }
                     } catch (error) {
+                        console.log(`Error checking item ${itemId} for account ${account.id}:`, error.message);
                         // Continue checking other item IDs
                     }
                 }
 
                 if (!accountItemId) {
-                    console.error(`Could not find item ID for account ${account.id}`);
+                    console.error(`Could not find item ID for account ${account.id} (${account.name})`);
                     continue;
                 }
 
+                console.log(`Found item ID ${accountItemId} for account ${account.name}`);
+
                 // Generate OFX files for this account
+                console.log(`Generating OFX files for account ${account.name}...`);
                 const ofxFiles = await client.outputOFXFiles(accountItemId, dateStart, dateEnd);
+                console.log(`Generated ${ofxFiles.length} OFX files for account ${account.name}`);
                 
                 // Filter to only the files for the selected account
                 const accountFiles = ofxFiles.filter(file => {
@@ -439,9 +446,19 @@ app.post('/api/export', async (req, res) => {
                     });
                 }
             } catch (error) {
-                console.error(`Error processing account ${account.id}:`, error);
+                console.error(`Error processing account ${account.id} (${account.name}):`, error);
+                console.error(`Error details:`, error.message);
                 // Continue with other accounts
             }
+        }
+
+        console.log(`Total files generated: ${generatedFiles.length}`);
+        
+        if (generatedFiles.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No OFX files were generated. This could be due to no transactions in the selected date range or account processing errors.'
+            });
         }
 
         res.json({
@@ -482,8 +499,10 @@ app.post('/api/export/zip', async (req, res) => {
         const { files } = req.body;
 
         console.log('ZIP request received with', files?.length || 0, 'files');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         if (!files || files.length === 0) {
+            console.log('No files provided for ZIP creation');
             return res.status(400).json({
                 success: false,
                 message: 'No files provided for ZIP creation'
