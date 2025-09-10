@@ -29,20 +29,37 @@ PLUGGY_ITEM_IDS=item_id_1,item_id_2,item_id_3
 
 ### Export transactions from Pluggy accounts to OFX files
 
-Run the command:
+**Option 1: Web Interface (Recommended)**
+```bash
+pnpm run web
+```
+Then open http://localhost:3001 in your browser for a user-friendly interface.
+
+**Option 2: Command Line**
 ```bash
 pnpm run export-ofx
 ```
 
-This will export the last 3 months of transactions from each account in Pluggy to different OFX files in the `exports/` directory, organized by date.
+The web interface provides:
+- 🎨 Modern, intuitive interface
+- 📅 Custom date range selection
+- 🏦 Selective account export
+- 📝 Custom file naming
+- 📁 Choose export location
+- 💾 Download as ZIP or individual files
+
+The command line exports the last 3 months of transactions from each account in Pluggy to different OFX files in the `exports/` directory, organized by date.
 
 ## Features
 
+- **Web Interface**: Modern, user-friendly interface for easy OFX export
+- **Command Line Tool**: Traditional CLI for automated exports
 - **OFX Export**: Export transactions to standard OFX format for use with financial software
 - **Brazilian Bank Support**: Optimized for Brazilian financial institutions via Pluggy API
 - **Multiple Account Types**: Support for both bank accounts and credit cards
 - **Transaction Filtering**: Built-in filters for common Brazilian bank transaction patterns
 - **Organized Output**: Files are automatically organized by date in the `exports/` directory
+- **Custom Configuration**: Flexible date ranges, account selection, and file naming
 
 ## What's Different from the Original
 

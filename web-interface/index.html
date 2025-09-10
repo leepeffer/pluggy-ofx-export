@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pluggy OFX Exporter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+
+        .section h2 {
+            color: #374151;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background: #4f46e5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checkbox-item:hover {
+            background: #f3f4f6;
+            border-color: #4f46e5;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .checkbox-item.checked {
+            background: #eef2ff;
+            border-color: #4f46e5;
+        }
+
+        .account-info {
+            flex: 1;
+        }
+
+        .account-name {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .account-type {
+            font-size: 0.9rem;
+            color: #6b7280;
+            text-transform: capitalize;
+        }
+
+        .account-balance {
+            font-size: 0.9rem;
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .account-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .rename-btn {
+            padding: 4px 8px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #374151;
+            transition: all 0.2s;
+        }
+
+        .rename-btn:hover {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+
+        .rename-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+
+        .rename-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .rename-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .save-btn, .cancel-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .save-btn {
+            background: #059669;
+            color: white;
+        }
+
+        .save-btn:hover {
+            background: #047857;
+        }
+
+        .cancel-btn {
+            background: #6b7280;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            background: #4b5563;
+        }
+
+        .custom-name {
+            color: #7c3aed;
+            font-weight: 600;
+        }
+
+        .quick-presets {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .preset-btn.active {
+            background: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .folder-picker {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .folder-picker input {
+            flex: 1;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-success {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #047857;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .file-preview {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .credentials-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .credentials-status.loaded {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .credentials-status.missing {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .export-actions {
+                flex-direction: column;
+            }
+            
+            .quick-presets {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏦 Pluggy OFX Exporter</h1>
+            <p>Export your Brazilian bank transactions to OFX format</p>
+        </div>
+
+        <div class="content">
+            <!-- Status Messages -->
+            <div id="status" class="status"></div>
+            <div id="progress" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+
+            <!-- Credentials Section -->
+            <div class="section">
+                <h2>
+                    <span class="section-icon">🔑</span>
+                    API Credentials
+                </h2>
+                <div id="credentials-status" class="credentials-status">
+                    <span class="loading"></span>
+                    <span>Checking credentials...</span>
+                </div>
+                <div id="credentials-form" class="hidden">
+                    <div class="form-group">
+                        <label for="clientId">Client ID</label>
+                        <input type="text" id="clientId" placeholder="Enter your Pluggy Client ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientSecret">Client Secret</label>
+                        <input type="password" id="clientSecret" placeholder="Enter your Pluggy Client Secret">
+                    </div>
+                    <div class="form-group">
+                        <label for="itemIds">Item IDs (comma-separated)</label>
+                        <input type="text" id="itemIds" placeholder="item_id_1,item_id_2,item_id_3">
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">
+                            Add new item IDs to connect more bank accounts
+                        </small>
+                    </div>
+                    <button id="save-credentials" class="btn btn-primary">Save Credentials</button>
+                </div>
+                
+                <div id="add-item-ids" class="hidden">
+                    <div class="form-group">
+                        <label for="newItemIds">Add More Item IDs</label>
+                        <input type="text" id="newItemIds" placeholder="new_item_id_1,new_item_id_2">
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">
+                            Add additional item IDs to connect more bank accounts
+                        </small>
+                    </div>
+                    <button id="add-item-ids-btn" class="btn btn-secondary">Add Item IDs</button>
+                </div>
+            </div>
+
+            <!-- Date Range Section -->
+            <div class="section">
+                <h2>
+                    <span class="section-icon">📅</span>
+                    Date Range
+                </h2>
+                <div class="quick-presets">
+                    <button class="preset-btn" data-preset="3months">Last 3 Months</button>
+                    <button class="preset-btn" data-preset="6months">Last 6 Months</button>
+                    <button class="preset-btn" data-preset="1year">Last Year</button>
+                    <button class="preset-btn" data-preset="custom">Custom Range</button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Selection Section -->
+            <div class="section">
+                <h2>
+                    <span class="section-icon">🏦</span>
+                    Select Accounts
+                </h2>
+                <div class="form-group">
+                    <button id="select-all" class="btn btn-secondary">Select All</button>
+                    <button id="select-none" class="btn btn-secondary">Select None</button>
+                </div>
+                <div id="accounts-list" class="checkbox-group">
+                    <div class="checkbox-item">
+                        <span class="loading"></span>
+                        <span>Loading accounts...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Customization Section -->
+            <div class="section">
+                <h2>
+                    <span class="section-icon">📝</span>
+                    File Customization
+                </h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="filePrefix">File Prefix (optional)</label>
+                        <input type="text" id="filePrefix" placeholder="e.g., MyBank">
+                    </div>
+                    <div class="form-group">
+                        <label for="fileSuffix">File Suffix (optional)</label>
+                        <input type="text" id="fileSuffix" placeholder="e.g., Export">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>File Name Preview</label>
+                    <div id="file-preview" class="file-preview">
+                        Select accounts to see file name preview
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Export Actions -->
+            <div class="export-actions">
+                <button id="export-btn" class="btn btn-primary" disabled>
+                    <span id="export-text">Export & Download OFX Files</span>
+                    <span id="export-loading" class="loading hidden"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let accounts = [];
+        let selectedAccounts = new Set();
+        let generatedFiles = [];
+        let customNames = {};
+
+        // DOM elements
+        const statusEl = document.getElementById('status');
+        const progressEl = document.getElementById('progress');
+        const progressBar = document.querySelector('.progress-bar');
+        const credentialsStatus = document.getElementById('credentials-status');
+        const credentialsForm = document.getElementById('credentials-form');
+        const addItemIds = document.getElementById('add-item-ids');
+        const accountsList = document.getElementById('accounts-list');
+        const filePreview = document.getElementById('file-preview');
+        const exportBtn = document.getElementById('export-btn');
+        const downloadZipBtn = document.getElementById('download-zip');
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkCredentials();
+            await loadCustomNames();
+            setupEventListeners();
+            setDefaultDateRange();
+        });
+
+        // Check if credentials exist
+        async function checkCredentials() {
+            try {
+                const response = await fetch('/api/credentials');
+                const data = await response.json();
+                
+                if (data.hasCredentials) {
+                    credentialsStatus.className = 'credentials-status loaded';
+                    credentialsStatus.innerHTML = '✅ Credentials loaded from environment';
+                    addItemIds.classList.remove('hidden');
+                    await loadAccounts();
+                } else {
+                    credentialsStatus.className = 'credentials-status missing';
+                    credentialsStatus.innerHTML = '⚠️ No credentials found. Please enter them below.';
+                    credentialsForm.classList.remove('hidden');
+                }
+            } catch (error) {
+                showStatus('error', 'Failed to check credentials. Make sure the server is running.');
+            }
+        }
+
+        // Save credentials
+        async function saveCredentials() {
+            const clientId = document.getElementById('clientId').value;
+            const clientSecret = document.getElementById('clientSecret').value;
+            const itemIds = document.getElementById('itemIds').value;
+
+            if (!clientId || !clientSecret || !itemIds) {
+                showStatus('error', 'Please fill in all credential fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientId, clientSecret, itemIds })
+                });
+
+                if (response.ok) {
+                    showStatus('success', 'Credentials saved successfully');
+                    credentialsForm.classList.add('hidden');
+                    addItemIds.classList.remove('hidden');
+                    credentialsStatus.className = 'credentials-status loaded';
+                    credentialsStatus.innerHTML = '✅ Credentials saved and loaded';
+                    await loadAccounts();
+                } else {
+                    const error = await response.json();
+                    showStatus('error', error.message || 'Failed to save credentials');
+                }
+            } catch (error) {
+                showStatus('error', 'Failed to save credentials');
+            }
+        }
+
+        // Add more item IDs
+        async function addMoreItemIds() {
+            const newItemIds = document.getElementById('newItemIds').value;
+
+            if (!newItemIds) {
+                showStatus('error', 'Please enter at least one item ID');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/credentials/add-items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newItemIds })
+                });
+
+                if (response.ok) {
+                    showStatus('success', 'Item IDs added successfully');
+                    document.getElementById('newItemIds').value = '';
+                    await loadAccounts();
+                } else {
+                    const error = await response.json();
+                    showStatus('error', error.message || 'Failed to add item IDs');
+                }
+            } catch (error) {
+                showStatus('error', 'Failed to add item IDs');
+            }
+        }
+
+        // Load custom names
+        async function loadCustomNames() {
+            try {
+                const response = await fetch('/api/account-names');
+                const data = await response.json();
+                
+                if (data.success) {
+                    customNames = data.customNames;
+                }
+            } catch (error) {
+                console.error('Failed to load custom names:', error);
+            }
+        }
+
+        // Load available accounts
+        async function loadAccounts() {
+            try {
+                const response = await fetch('/api/accounts');
+                const data = await response.json();
+                
+                if (data.success) {
+                    accounts = data.accounts;
+                    renderAccounts();
+                } else {
+                    showStatus('error', data.message || 'Failed to load accounts');
+                }
+            } catch (error) {
+                showStatus('error', 'Failed to load accounts. Check your credentials.');
+            }
+        }
+
+        // Render accounts list
+        function renderAccounts() {
+            accountsList.innerHTML = '';
+            
+            accounts.forEach(account => {
+                const checkboxItem = document.createElement('div');
+                checkboxItem.className = 'checkbox-item';
+                checkboxItem.innerHTML = `
+                    <input type="checkbox" id="account-${account.id}" value="${account.id}">
+                    <div class="account-info">
+                        <div class="account-name">
+                            <span class="${account.customName ? 'custom-name' : ''}">${account.displayName}</span>
+                            ${account.customName ? `<small style="color: #6b7280; display: block;">Original: ${account.name}</small>` : ''}
+                        </div>
+                        <div class="account-type">${account.type.toLowerCase()}</div>
+                        <div class="account-balance">${formatCurrency(account.balance, account.currencyCode)}</div>
+                    </div>
+                    <div class="account-actions">
+                        <button class="rename-btn" onclick="startRename('${account.id}', '${account.name.replace(/'/g, "\\'")}')">Rename</button>
+                    </div>
+                `;
+                
+                const checkbox = checkboxItem.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        selectedAccounts.add(account.id);
+                        checkboxItem.classList.add('checked');
+                    } else {
+                        selectedAccounts.delete(account.id);
+                        checkboxItem.classList.remove('checked');
+                    }
+                    updateFilePreview();
+                    updateExportButton();
+                });
+                
+                accountsList.appendChild(checkboxItem);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Credentials
+            document.getElementById('save-credentials').addEventListener('click', saveCredentials);
+            document.getElementById('add-item-ids-btn').addEventListener('click', addMoreItemIds);
+
+            // Date presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => setDatePreset(btn.dataset.preset));
+            });
+
+            // Account selection
+            document.getElementById('select-all').addEventListener('click', selectAllAccounts);
+            document.getElementById('select-none').addEventListener('click', selectNoAccounts);
+
+            // File customization
+            document.getElementById('filePrefix').addEventListener('input', updateFilePreview);
+            document.getElementById('fileSuffix').addEventListener('input', updateFilePreview);
+
+            // Export actions
+            document.getElementById('export-btn').addEventListener('click', exportOFXFiles);
+        }
+
+        // Set default date range (last 3 months)
+        function setDefaultDateRange() {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setMonth(startDate.getMonth() - 3);
+            
+            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            
+            document.querySelector('[data-preset="3months"]').classList.add('active');
+        }
+
+        // Set date preset
+        function setDatePreset(preset) {
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-preset="${preset}"]`).classList.add('active');
+
+            const endDate = new Date();
+            const startDate = new Date();
+
+            switch (preset) {
+                case '3months':
+                    startDate.setMonth(startDate.getMonth() - 3);
+                    break;
+                case '6months':
+                    startDate.setMonth(startDate.getMonth() - 6);
+                    break;
+                case '1year':
+                    startDate.setFullYear(startDate.getFullYear() - 1);
+                    break;
+                case 'custom':
+                    return; // Don't change dates for custom
+            }
+
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+        }
+
+        // Account selection
+        function selectAllAccounts() {
+            selectedAccounts.clear();
+            accounts.forEach(account => {
+                selectedAccounts.add(account.id);
+                const checkbox = document.getElementById(`account-${account.id}`);
+                checkbox.checked = true;
+                checkbox.parentElement.classList.add('checked');
+            });
+            updateFilePreview();
+            updateExportButton();
+        }
+
+        function selectNoAccounts() {
+            selectedAccounts.clear();
+            document.querySelectorAll('#accounts-list input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+                checkbox.parentElement.classList.remove('checked');
+            });
+            updateFilePreview();
+            updateExportButton();
+        }
+
+        // Update file preview
+        function updateFilePreview() {
+            if (selectedAccounts.size === 0) {
+                filePreview.textContent = 'Select accounts to see file name preview';
+                return;
+            }
+
+            const prefix = document.getElementById('filePrefix').value;
+            const suffix = document.getElementById('fileSuffix').value;
+            const startDate = document.getElementById('startDate').value.replace(/-/g, '');
+            const endDate = document.getElementById('endDate').value.replace(/-/g, '');
+
+            const preview = Array.from(selectedAccounts).map(accountId => {
+                const account = accounts.find(acc => acc.id === accountId);
+                if (!account) return '';
+
+                const bankName = account.bankInfo?.orgName?.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10) || 'Bank';
+                const accountType = account.type === 'BANK' ? 'checking' : 'cc';
+                const accountSuffix = account.number ? `-${account.number.slice(-4)}` : '';
+                const displayName = account.displayName || account.name;
+                const nameSuffix = displayName ? `-${displayName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15)}` : '';
+
+                let fileName = `${bankName}-${accountType}${accountSuffix}${nameSuffix}-${startDate}-${endDate}.ofx`;
+                
+                if (prefix) fileName = `${prefix}-${fileName}`;
+                if (suffix) fileName = fileName.replace('.ofx', `-${suffix}.ofx`);
+
+                return fileName;
+            }).join('\n');
+
+            filePreview.textContent = preview || 'No accounts selected';
+        }
+
+        // Update export button state
+        function updateExportButton() {
+            const hasSelection = selectedAccounts.size > 0;
+            const hasCredentials = !credentialsForm.classList.contains('hidden') || credentialsStatus.classList.contains('loaded');
+            
+            exportBtn.disabled = !(hasSelection && hasCredentials);
+        }
+
+        // Export OFX files
+        async function exportOFXFiles() {
+            if (selectedAccounts.size === 0) {
+                showStatus('error', 'Please select at least one account');
+                return;
+            }
+
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const prefix = document.getElementById('filePrefix').value;
+            const suffix = document.getElementById('fileSuffix').value;
+
+            if (!startDate || !endDate) {
+                showStatus('error', 'Please select a valid date range');
+                return;
+            }
+
+            try {
+                showProgress(true);
+                exportBtn.disabled = true;
+                document.getElementById('export-text').classList.add('hidden');
+                document.getElementById('export-loading').classList.remove('hidden');
+
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accountIds: Array.from(selectedAccounts),
+                        startDate,
+                        endDate,
+                        prefix,
+                        suffix
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    generatedFiles = data.files;
+                    
+                    if (data.files.length === 1) {
+                        // Single file - download directly
+                        showStatus('success', `Successfully generated ${data.files.length} OFX file`);
+                        await downloadFile(data.files[0].content, data.files[0].fileName);
+                        showStatus('success', `Downloaded ${data.files[0].fileName} to your Downloads folder`);
+                    } else {
+                        // Multiple files - create and download ZIP
+                        showStatus('success', `Successfully generated ${data.files.length} OFX files`);
+                        await downloadZipFile(data.files);
+                        showStatus('success', `Downloaded ${data.files.length} OFX files as ZIP to your Downloads folder`);
+                    }
+                } else {
+                    showStatus('error', data.message || 'Export failed');
+                }
+            } catch (error) {
+                showStatus('error', 'Export failed: ' + error.message);
+            } finally {
+                showProgress(false);
+                exportBtn.disabled = false;
+                document.getElementById('export-text').classList.remove('hidden');
+                document.getElementById('export-loading').classList.add('hidden');
+            }
+        }
+
+        // Download a file to the user's Downloads folder
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'application/x-ofx' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // Download multiple files as a ZIP
+        async function downloadZipFile(files) {
+            try {
+                const response = await fetch('/api/export/zip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ files })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `OFX-Export-${new Date().toISOString().split('T')[0]}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    throw new Error('Failed to create ZIP file');
+                }
+            } catch (error) {
+                console.error('ZIP download error:', error);
+                // Fallback to individual downloads
+                showStatus('info', 'ZIP creation failed, downloading files individually...');
+                for (const file of files) {
+                    await downloadFile(file.content, file.fileName);
+                }
+            }
+        }
+
+
+        // Utility functions
+        function showStatus(type, message) {
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function showProgress(show) {
+            progressEl.style.display = show ? 'block' : 'none';
+            if (show) {
+                progressBar.style.width = '0%';
+                // Simulate progress
+                let width = 0;
+                const interval = setInterval(() => {
+                    width += 10;
+                    progressBar.style.width = width + '%';
+                    if (width >= 100) {
+                        clearInterval(interval);
+                    }
+                }, 200);
+            }
+        }
+
+        function formatCurrency(amount, currency) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: currency || 'BRL'
+            }).format(amount);
+        }
+
+        // Rename functionality
+        function startRename(accountId, originalName) {
+            const accountItem = document.querySelector(`#account-${accountId}`).closest('.checkbox-item');
+            const accountInfo = accountItem.querySelector('.account-info');
+            const accountActions = accountItem.querySelector('.account-actions');
+            
+            // Store original content
+            const originalContent = accountInfo.innerHTML;
+            const originalActions = accountActions.innerHTML;
+            
+            // Create rename interface
+            accountInfo.innerHTML = `
+                <div class="account-name">
+                    <input type="text" class="rename-input" id="rename-input-${accountId}" 
+                           value="${customNames[accountId] || originalName}" 
+                           placeholder="Enter custom name">
+                </div>
+                <div class="account-type">${accounts.find(acc => acc.id === accountId)?.type.toLowerCase()}</div>
+                <div class="account-balance">${formatCurrency(accounts.find(acc => acc.id === accountId)?.balance, accounts.find(acc => acc.id === accountId)?.currencyCode)}</div>
+            `;
+            
+            accountActions.innerHTML = `
+                <div class="rename-actions">
+                    <button class="save-btn" onclick="saveRename('${accountId}')">Save</button>
+                    <button class="cancel-btn" onclick="cancelRename('${accountId}', '${originalName.replace(/'/g, "\\'")}')">Cancel</button>
+                </div>
+            `;
+            
+            // Focus the input
+            const input = document.getElementById(`rename-input-${accountId}`);
+            input.focus();
+            input.select();
+            
+            // Handle Enter key
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveRename(accountId);
+                }
+            });
+        }
+
+        async function saveRename(accountId) {
+            const input = document.getElementById(`rename-input-${accountId}`);
+            const customName = input.value.trim();
+            
+            try {
+                const response = await fetch('/api/account-names', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accountId, customName })
+                });
+
+                if (response.ok) {
+                    // Update local state
+                    if (customName) {
+                        customNames[accountId] = customName;
+                    } else {
+                        delete customNames[accountId];
+                    }
+                    
+                    // Update account in accounts array
+                    const account = accounts.find(acc => acc.id === accountId);
+                    if (account) {
+                        account.customName = customName || null;
+                        account.displayName = customName || account.name;
+                    }
+                    
+                    // Re-render accounts
+                    renderAccounts();
+                    updateFilePreview();
+                    
+                    showStatus('success', customName ? 'Custom name saved successfully' : 'Custom name removed successfully');
+                } else {
+                    const error = await response.json();
+                    showStatus('error', error.message || 'Failed to save custom name');
+                }
+            } catch (error) {
+                showStatus('error', 'Failed to save custom name');
+            }
+        }
+
+        function cancelRename(accountId, originalName) {
+            // Re-render accounts to restore original state
+            renderAccounts();
+        }
+    </script>
+</body>
+</html>

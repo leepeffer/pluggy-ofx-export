@@ -2,6 +2,8 @@
   "private": true,
   "scripts": {
     "export-ofx": "tsx ./packages/export-ofx/bin/index.ts",
+    "web": "cd web-interface && npm start",
+    "web:dev": "cd web-interface && npm run dev",
     "test": "vitest run"
   },
   "workspaces": [
