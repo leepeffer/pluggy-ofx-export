@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { Client } from "@pluggy-actual-export/core";
 import * as fs from "node:fs";
+import * as path from "node:path";
 
 const clientId = process.env.PLUGGY_CLIENT_ID!;
 const clientSecret = process.env.PLUGGY_CLIENT_SECRET!;
@@ -9,6 +10,11 @@ const itemIds = process.env.PLUGGY_ITEM_IDS?.split(",")!;
 const client = new Client({ clientId, clientSecret });
 
 const MONTHS = 3;
+
+// Create exports directory with today's date
+const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+const exportDir = path.join('exports', today);
+fs.mkdirSync(exportDir, { recursive: true });
 
 await Promise.all(
   itemIds.map(async (itemId) => {
@@ -24,8 +30,9 @@ await Promise.all(
 
       const files = await client.outputOFXFiles(itemId, dateStart, dateEnd);
       for (const file of files) {
-        console.log(`Writing file ${file.getSuggestedFileName()}`);
-        fs.writeFileSync(file.getSuggestedFileName(), file.output());
+        const filePath = path.join(exportDir, file.getSuggestedFileName());
+        console.log(`Writing file ${filePath}`);
+        fs.writeFileSync(filePath, file.output());
       }
     }
   }),

@@ -63,14 +63,25 @@ export class Client {
     return await Promise.all(
       accounts.results.map(async (acc) => {
         let ofxFile;
+        // Determine account type based on name and type
+        let accountType: "CHECKING" | "$AVING$" | "MONEYMRKT" = "CHECKING";
+        if (acc.name.toLowerCase().includes("poupança") || acc.name.toLowerCase().includes("savings")) {
+          accountType = "$AVING$";
+        } else if (acc.name.toLowerCase().includes("fundo") || acc.name.toLowerCase().includes("fund") || 
+                   acc.name.toLowerCase().includes("investimento") || acc.name.toLowerCase().includes("investment")) {
+          accountType = "MONEYMRKT";
+        }
+
         switch (acc.type) {
           case "BANK":
             ofxFile = new OFXBankFile(
-              "CHECKING",
+              accountType,
               bankInfo,
               acc.currencyCode,
               dateStart,
               dateEnd,
+              acc.name,
+              acc.number,
             );
             break;
           case "CREDIT":
@@ -85,10 +96,11 @@ export class Client {
               acc.currencyCode,
               dateStart,
               dateEnd,
+              acc.name,
             );
             break;
           default:
-            throw new Error("Account type not supported");
+            throw new Error(`Account type ${acc.type} not supported`);
         }
 
         const txs = await this.client.fetchTransactions(acc.id, {

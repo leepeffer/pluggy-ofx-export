@@ -159,6 +159,8 @@ export abstract class OFXFile {
 
 export class OFXBankFile extends OFXFile {
   private accountType: BankAccountType;
+  private accountName?: string;
+  private accountNumber?: string;
 
   constructor(
     accountType: BankAccountType,
@@ -166,13 +168,22 @@ export class OFXBankFile extends OFXFile {
     currency: string,
     dateStart: Date,
     dateEnd: Date,
+    accountName?: string,
+    accountNumber?: string,
   ) {
     super(accountInfo, currency, dateStart, dateEnd);
     this.accountType = accountType;
+    this.accountName = accountName;
+    this.accountNumber = accountNumber;
   }
 
   override getSuggestedFileName(): string {
-    return `statement-${this.accountInfo.fid}-${this.accountInfo.accountNumber}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
+    const bankName = this.accountInfo.orgName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+    const accountType = this.accountType === "CHECKING" ? "checking" : this.accountType.toLowerCase();
+    const accountSuffix = this.accountNumber ? `-${this.accountNumber.slice(-4)}` : '';
+    const nameSuffix = this.accountName ? `-${this.accountName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15)}` : '';
+    
+    return `${bankName}-${accountType}${accountSuffix}${nameSuffix}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
   }
 
   private outputBankMsg(): string {
@@ -217,6 +228,7 @@ export class OFXBankFile extends OFXFile {
 export class OFXCCFile extends OFXFile {
   private cardInfo: OFXCardInfo;
   private id: string;
+  private accountName?: string;
 
   constructor(
     id: string,
@@ -225,14 +237,22 @@ export class OFXCCFile extends OFXFile {
     currency: string,
     dateStart: Date,
     dateEnd: Date,
+    accountName?: string,
   ) {
     super(accountInfo, currency, dateStart, dateEnd);
     this.id = id;
     this.cardInfo = cardInfo;
+    this.accountName = accountName;
   }
 
   override getSuggestedFileName(): string {
-    return `cc-${this.accountInfo.fid}-${this.cardInfo.brand}-${this.cardInfo.level}-${this.cardInfo.number}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
+    const bankName = this.accountInfo.orgName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+    const brand = this.cardInfo.brand.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+    const level = this.cardInfo.level.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+    const last4 = this.cardInfo.number.slice(-4);
+    const nameSuffix = this.accountName ? `-${this.accountName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15)}` : '';
+    
+    return `${bankName}-cc-${brand}-${level}-${last4}${nameSuffix}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
   }
 
   override addTx(tx: OFXTransaction) {
