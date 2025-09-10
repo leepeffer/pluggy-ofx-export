@@ -106,6 +106,12 @@
             border-color: #4f46e5;
         }
 
+        .form-group input:disabled {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -507,11 +513,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="startDate">Start Date</label>
-                        <input type="date" id="startDate">
+                        <input type="date" id="startDate" disabled>
                     </div>
                     <div class="form-group">
                         <label for="endDate">End Date</label>
-                        <input type="date" id="endDate">
+                        <input type="date" id="endDate" disabled>
                     </div>
                 </div>
             </div>
@@ -779,8 +785,14 @@
             const startDate = new Date();
             startDate.setMonth(startDate.getMonth() - 3);
             
-            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
-            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            // Set values and disable inputs (since we're using preset)
+            startDateInput.value = startDate.toISOString().split('T')[0];
+            endDateInput.value = endDate.toISOString().split('T')[0];
+            startDateInput.disabled = true;
+            endDateInput.disabled = true;
             
             document.querySelector('[data-preset="3months"]').classList.add('active');
         }
@@ -789,6 +801,20 @@
         function setDatePreset(preset) {
             document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`[data-preset="${preset}"]`).classList.add('active');
+
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+
+            if (preset === 'custom') {
+                // Enable date inputs for custom range
+                startDateInput.disabled = false;
+                endDateInput.disabled = false;
+                return; // Don't change dates for custom
+            } else {
+                // Disable date inputs for presets
+                startDateInput.disabled = true;
+                endDateInput.disabled = true;
+            }
 
             const endDate = new Date();
             const startDate = new Date();
@@ -803,12 +829,10 @@
                 case '1year':
                     startDate.setFullYear(startDate.getFullYear() - 1);
                     break;
-                case 'custom':
-                    return; // Don't change dates for custom
             }
 
-            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
-            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+            startDateInput.value = startDate.toISOString().split('T')[0];
+            endDateInput.value = endDate.toISOString().split('T')[0];
         }
 
         // Account selection
