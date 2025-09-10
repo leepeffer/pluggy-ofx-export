@@ -1,6 +1,6 @@
-# Pluggy OFX and Actual Budget exporter
+# Pluggy OFX Exporter
 
-This project allows you to export transactions from financial institutions in Brazil to [Actual budget](https://actualbudget.org/) and OFX files.
+This project allows you to export transactions from financial institutions in Brazil to OFX files.
 It uses the free open finance API from [Pluggy](https://www.pluggy.ai/en).
 
 ## Setup
@@ -13,32 +13,19 @@ Run:
 pnpm install
 ```
 
-Create a .env file with the following content:
-
+1. Copy the example environment file:
 ```bash
-PLUGGY_CLIENT_ID=...              # Pluggy client ID
-PLUGGY_CLIENT_SECRET=...          # Pluggy client secret
-PLUGGY_ITEM_IDS=...               # comma separated item IDs from Pluggy
-ACTUAL_BUDGET_URL=...             # Actual server URL
-ACTUAL_BUDGET_PASSWORD=...        # Actual server password
-ACTUAL_BUDGET_SYNC_ID=...         # Actual budget sync ID (found in advanced settings)
-ACTUAL_BUDGET_ENCRYPTION_KEY=...  # Actual budget encryption key (optional)
+cp .env.example .env
 ```
 
-### Export transactions from Pluggy accounts to Actual budget
-
-Run the command:
+2. Edit `.env` with your actual Pluggy API credentials:
 ```bash
-pnpm run export-actual
+PLUGGY_CLIENT_ID=your_actual_client_id
+PLUGGY_CLIENT_SECRET=your_actual_client_secret
+PLUGGY_ITEM_IDS=item_id_1,item_id_2,item_id_3
 ```
 
-The script will try to guess which Actual accounts correspond to your bank/credit card accounts from Pluggy based on a heuristic.
-To make sure this works well, include the following in your Actual account names:
-- Full name of the financial institution
-- Number of the financial institution
-- Last 4 digits of the credit card
-- The words `checking` or `credit card`
-- Brand and level of the credit card
+> **⚠️ Security Warning**: Never commit your `.env` file to version control. It contains sensitive API credentials that should remain private.
 
 ### Export transactions from Pluggy accounts to OFX files
 
@@ -47,16 +34,56 @@ Run the command:
 pnpm run export-ofx
 ```
 
-This will export the last 3 months of transactions from each account in Pluggy to different OFX files in the current directory.
+This will export the last 3 months of transactions from each account in Pluggy to different OFX files in the `exports/` directory, organized by date.
 
-### Deploy AWS lambda that exports transactions from Pluggy to Actual every day
+## Features
 
-```bash
-cd packages/cron-aws-lambda
-npx cdk bootstrap # bootstrap AWS CDK if you haven't already
-npx cdk deploy
-```
+- **OFX Export**: Export transactions to standard OFX format for use with financial software
+- **Brazilian Bank Support**: Optimized for Brazilian financial institutions via Pluggy API
+- **Multiple Account Types**: Support for both bank accounts and credit cards
+- **Transaction Filtering**: Built-in filters for common Brazilian bank transaction patterns
+- **Organized Output**: Files are automatically organized by date in the `exports/` directory
 
-This will create a schedule that runs an AWS lambda every day at 00:00 that exports your transactions to Actual budget.
+## What's Different from the Original
 
-Note: you need to have configured the AWS CLI first.
+This fork removes all ACTUAL budget integration functionality and focuses exclusively on OFX file generation:
+
+- ❌ Removed ACTUAL budget integration (`packages/export-actual/`)
+- ❌ Removed AWS Lambda cron job (`packages/cron-aws-lambda/`)
+- ❌ Removed ACTUAL-related environment variables
+- ✅ Kept core OFX generation functionality
+- ✅ Kept transaction filtering for Brazilian banks
+- ✅ Kept support for both bank accounts and credit cards
+
+## Credits
+
+Original repository by [@felipeagc](https://github.com/felipeagc) - [pluggy-actual-export](https://github.com/felipeagc/pluggy-actual-export)
+
+Thank you to Felipe for creating the original implementation and making it available as open source!
+
+## Security
+
+This repository is designed to be safe for public use. Here are the security measures in place:
+
+- **Environment Variables**: All sensitive data (API keys, secrets) are loaded from environment variables
+- **Gitignore Protection**: The `.gitignore` file excludes all sensitive files (`.env`, `*.ofx`, etc.)
+- **No Hardcoded Secrets**: No API credentials are hardcoded in the source code
+- **Example Configuration**: Use `.env.example` as a template for your local configuration
+
+### Before Making Public
+
+If you're planning to make this repository public, ensure:
+
+1. ✅ No `.env` files are committed
+2. ✅ No API keys or secrets in the code
+3. ✅ `.gitignore` properly excludes sensitive files
+4. ✅ Use `.env.example` for configuration template
+5. ✅ Review git history for any accidentally committed secrets
+
+### Getting Pluggy API Credentials
+
+1. Visit [Pluggy Dashboard](https://dashboard.pluggy.ai/)
+2. Create an account or sign in
+3. Navigate to the API section
+4. Generate your Client ID and Client Secret
+5. Connect your financial institutions to get Item IDs

@@ -1,5 +1,5 @@
 {
-  "name": "@pluggy-actual-export/export-ofx",
+  "name": "@pluggy-ofx-export/export-ofx",
   "version": "0.1.0",
   "main": "bin/index.ts",
   "type": "module",
@@ -7,7 +7,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@pluggy-actual-export/core": "workspace:^",
+    "@pluggy-ofx-export/core": "workspace:^",
     "dotenv": "^16.4.7"
   }
 }

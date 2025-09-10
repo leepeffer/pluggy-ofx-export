@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client } from "@pluggy-actual-export/core";
+import { Client } from "@pluggy-ofx-export/core";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
