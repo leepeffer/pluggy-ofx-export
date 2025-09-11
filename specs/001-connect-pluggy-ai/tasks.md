@@ -21,20 +21,20 @@
 - [x] T005 [P] Create a new failing integration test file `packages/export-ofx/test/integration.test.ts` that covers the main user story from `spec.md`.
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
-- [ ] T006 [P] Create data models for User, Connection, and Transaction in `packages/core/src/models.ts` based on `data-model.md`.
-- [ ] T007 Create a new file `packages/export-ofx/src/commands/configure.ts` and implement the `configure` command logic.
-- [ ] T008 Create a new file `packages/core/src/ynab-client.ts` and implement a lightweight YNAB API client wrapper using `axios`.
-- [ ] T009 Create a new file `packages/export-ofx/src/commands/sync.ts` and implement the `sync` command logic.
-- [ ] T010 Create a new file `packages/core/src/sync.ts` and implement the core synchronization logic, including fetching from Pluggy and posting to YNAB.
-- [ ] T011 Implement the idempotency check for transactions within `packages/core/src/sync.ts` using the Pluggy transaction ID.
+- [x] T006 [P] Create data models for User, Connection, and Transaction in `packages/core/src/models.ts` based on `data-model.md`.
+- [x] T007 Create a new file `packages/export-ofx/src/commands/configure.ts` and implement the `configure` command logic.
+- [x] T008 Create a new file `packages/core/src/ynab-client.ts` and implement a lightweight YNAB API client wrapper using `axios`.
+- [x] T009 Create a new file `packages/export-ofx/src/commands/sync.ts` and implement the `sync` command logic.
+- [x] T010 Create a new file `packages/core/src/sync.ts` and implement the core synchronization logic, including fetching from Pluggy and posting to YNAB.
+- [x] T011 Implement the idempotency check for transactions within `packages/core/src/sync.ts` using the Pluggy transaction ID.
 
 ## Phase 3.4: Integration
-- [ ] T012 Integrate the `pino` logger from `packages/core/src/logger.ts` into the CLI commands.
-- [ ] T013 Implement secure storage and retrieval of API keys using `dotenv` in the `configure` command.
+- [x] T012 Integrate the `pino` logger from `packages/core/src/logger.ts` into the CLI commands.
+- [x] T013 Implement secure storage and retrieval of API keys using `dotenv` in the `configure` command.
 
 ## Phase 3.5: Polish
-- [ ] T014 [P] Add unit tests for any utility functions created during implementation.
-- [ ] T015 [P] Update the root `README.md` with detailed usage instructions for the new feature.
+- [x] T014 [P] Add unit tests for any utility functions created during implementation.
+- [x] T015 [P] Update the root `README.md` with detailed usage instructions for the new feature.
 
 ## Dependencies
 - T001, T002 (Setup) must be done first.

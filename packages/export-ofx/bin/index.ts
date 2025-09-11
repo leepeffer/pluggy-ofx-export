@@ -1,39 +1,49 @@
-import "dotenv/config";
-import { Client } from "@pluggy-ofx-export/core";
-import * as fs from "node:fs";
-import * as path from "node:path";
+import 'dotenv/config';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import { configure } from '../src/commands/configure';
+import { sync } from '../src/commands/sync';
 
-const clientId = process.env.PLUGGY_CLIENT_ID!;
-const clientSecret = process.env.PLUGGY_CLIENT_SECRET!;
-const itemIds = process.env.PLUGGY_ITEM_IDS?.split(",")!;
-
-const client = new Client({ clientId, clientSecret });
-
-const MONTHS = 3;
-
-// Create exports directory with today's date
-const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
-const exportDir = path.join('exports', today);
-fs.mkdirSync(exportDir, { recursive: true });
-
-await Promise.all(
-  itemIds.map(async (itemId) => {
-    const now = new Date();
-
-    for (let i = 0; i < MONTHS; i++) {
-      const dateStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const dateEnd = new Date(
-        dateStart.getFullYear(),
-        dateStart.getMonth() + 1,
-        0,
-      );
-
-      const files = await client.outputOFXFiles(itemId, dateStart, dateEnd);
-      for (const file of files) {
-        const filePath = path.join(exportDir, file.getSuggestedFileName());
-        console.log(`Writing file ${filePath}`);
-        fs.writeFileSync(filePath, file.output());
-      }
+yargs(hideBin(process.argv))
+  .command(
+    'configure',
+    'Configure Pluggy and YNAB API keys',
+    (yargs) => {
+      return yargs
+        .option('pluggy-client-id', {
+          describe: 'Your Pluggy.ai Client ID',
+          type: 'string',
+        })
+        .option('pluggy-client-secret', {
+            describe: 'Your Pluggy.ai Client Secret',
+            type: 'string',
+        })
+        .option('ynab-api-key', {
+          describe: 'Your YNAB API key',
+          type: 'string',
+        });
+    },
+    (argv) => {
+      configure(argv);
     }
-  }),
-);
+  )
+  .command(
+    'sync',
+    'Synchronize transactions',
+    (yargs) => {
+      return yargs
+        .option('account', {
+          describe: 'Account mapping in the format pluggy_account_id:ynab_budget_id:ynab_account_id',
+          type: 'string',
+        })
+        .option('from', {
+          describe: 'Start date for synchronization (YYYY-MM-DD)',
+          type: 'string',
+        });
+    },
+    (argv) => {
+      sync(argv);
+    }
+  )
+  .demandCommand(1, 'You need at least one command before moving on')
+  .help().argv;

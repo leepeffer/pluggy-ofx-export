@@ -135,10 +135,9 @@ export class Client {
             throw new Error(`Account type ${acc.type} not supported`);
         }
 
-        const txs = await this.client.fetchTransactions(acc.id, {
+        const txs = await this.fetchTransactions(acc.id, {
           from: dateStart.toISOString(),
           to: dateEnd.toISOString(),
-          pageSize: PAGE_SIZE,
         });
         if (txs.totalPages != 1) {
           throw new Error(
@@ -179,4 +178,13 @@ export class Client {
       }),
     );
   }
+
+  async fetchTransactions(accountId: string, options: { from: string, to: string }) {
+    return this.client.fetchTransactions(accountId, options);
+  }
 }
+
+export * from './logger';
+export * from './models';
+export * from './ynab-client';
+export * from './sync';

@@ -1,8 +1,8 @@
-# Pluggy OFX Exporter
+# Pluggy OFX Exporter & YNAB Sync
 
 > **⚠️ Warning**: This was entirely vibe coded by someone untrained in computer science. Be warned.
 
-This project allows you to export transactions from financial institutions in Brazil to OFX files.
+This project allows you to export transactions from financial institutions in Brazil to OFX files, and also to synchronize them with YNAB.
 It uses the free open finance API from [Pluggy](https://www.pluggy.ai/en).
 
 ## Setup
@@ -20,14 +20,17 @@ pnpm install
 cp .env.example .env
 ```
 
-2. Edit `.env` with your actual Pluggy API credentials:
+2. Edit `.env` with your actual Pluggy API credentials and YNAB API Key:
 ```bash
 PLUGGY_CLIENT_ID=your_actual_client_id
 PLUGGY_CLIENT_SECRET=your_actual_client_secret
 PLUGGY_ITEM_IDS=item_id_1,item_id_2,item_id_3
+YNAB_API_KEY=your_ynab_api_key
 ```
 
 > **⚠️ Security Warning**: Never commit your `.env` file to version control. It contains sensitive API credentials that should remain private.
+
+## Usage
 
 ### Export transactions from Pluggy accounts to OFX files
 
@@ -51,6 +54,43 @@ The web interface provides:
 - 💾 Download as ZIP or individual files
 
 The command line exports the last 3 months of transactions from each account in Pluggy to different OFX files in the `exports/` directory, organized by date.
+
+### Synchronize transactions with YNAB
+
+You can also synchronize your transactions directly with YNAB.
+
+**1. Configure Credentials**
+
+First, you need to configure your credentials using the CLI:
+```bash
+npx tsx ./packages/export-ofx/bin/index.ts configure --pluggy-client-id YOUR_PLUGGY_CLIENT_ID --pluggy-client-secret YOUR_PLUGGY_CLIENT_SECRET --ynab-api-key YOUR_YNAB_API_KEY
+```
+This will save your credentials to a `.env` file in the root of the project.
+
+**2. Find Account IDs**
+
+You will need the account IDs from both Pluggy.ai and YNAB that you want to connect.
+
+-   **Pluggy.ai**: You can get the account ID from the Pluggy.ai dashboard or API.
+-   **YNAB**: You can get the budget and account IDs from the YNAB dashboard or API.
+
+**3. Synchronize Transactions**
+
+Once configured, you can run the synchronization command. You need to map the Pluggy.ai account ID to the YNAB budget and account ID.
+
+```bash
+npx tsx ./packages/export-ofx/bin/index.ts sync --account <pluggy_account_id>:<ynab_budget_id>:<ynab_account_id>
+```
+
+You can map multiple accounts by providing the `--account` argument multiple times.
+
+```bash
+npx tsx ./packages/export-ofx/bin/index.ts sync \
+  --account <pluggy_account_id_1>:<ynab_budget_id_1>:<ynab_account_id_1> \
+  --account <pluggy_account_id_2>:<ynab_budget_id_2>:<ynab_account_id_2>
+```
+
+The tool will fetch new transactions from Pluggy.ai and export them to your YNAB account.
 
 ## Features
 

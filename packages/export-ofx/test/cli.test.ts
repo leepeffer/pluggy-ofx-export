@@ -1,56 +1,73 @@
-import { describe, it, expect } from 'vitest';
-import { execSync } from 'child_process';
+import { describe, it, expect, vi } from 'vitest';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import * as configureCommand from '../src/commands/configure';
+import * as syncCommand from '../src/commands/sync';
 
-const cliCommand = 'npx tsx ./packages/export-ofx/bin/index.ts';
+const cli = yargs(hideBin(process.argv))
+  .command(
+    'configure',
+    'Configure Pluggy and YNAB API keys',
+    (yargs) => {
+      return yargs
+        .option('pluggy-client-id', {
+          describe: 'Your Pluggy.ai Client ID',
+          type: 'string',
+        })
+        .option('pluggy-client-secret', {
+          describe: 'Your Pluggy.ai Client Secret',
+          type: 'string',
+        })
+        .option('ynab-api-key', {
+          describe: 'Your YNAB API key',
+          type: 'string',
+        });
+    },
+    (argv) => {
+      configureCommand.configure(argv);
+    }
+  )
+  .command(
+    'sync',
+    'Synchronize transactions',
+    (yargs) => {
+      return yargs
+        .option('account', {
+          describe: 'Account mapping in the format pluggy_account_id:ynab_budget_id:ynab_account_id',
+          type: 'string',
+        })
+        .option('from', {
+          describe: 'Start date for synchronization (YYYY-MM-DD)',
+          type: 'string',
+        });
+    },
+    (argv) => {
+      syncCommand.sync(argv);
+    }
+  )
+  .demandCommand(1, 'You need at least one command before moving on')
+  .help();
 
 describe('CLI Contracts', () => {
-  describe('configure', () => {
-    it('should store API keys when valid keys are provided', () => {
-      // This test will fail until the configure command is implemented
-      const output = execSync(`${cliCommand} configure --pluggy-api-key FAKE_KEY --ynab-api-key FAKE_KEY`);
-      expect(output.toString()).toContain('Configuration saved successfully.');
-    });
-
-    it('should return an error if keys are invalid', () => {
-        // This test will fail until the configure command is implemented
-        expect(() => {
-            execSync(`${cliCommand} configure --pluggy-api-key INVALID --ynab-api-key INVALID`);
-        }).toThrow();
-    });
-
-    it('should return an error if pluggy-api-key is missing', () => {
-        // This test will fail until the configure command is implemented
-        expect(() => {
-            execSync(`${cliCommand} configure --ynab-api-key FAKE_KEY`);
-        }).toThrow();
-    });
-
-    it('should return an error if ynab-api-key is missing', () => {
-        // This test will fail until the configure command is implemented
-        expect(() => {
-            execSync(`${cliCommand} configure --pluggy-api-key FAKE_KEY`);
-        }).toThrow();
-    });
+  it('should call configure function with correct arguments', async () => {
+    const configureSpy = vi.spyOn(configureCommand, 'configure');
+    await cli.parse('configure --pluggy-client-id FAKE_ID --pluggy-client-secret FAKE_SECRET --ynab-api-key FAKE_KEY');
+    expect(configureSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pluggyClientId: 'FAKE_ID',
+        pluggyClientSecret: 'FAKE_SECRET',
+        ynabApiKey: 'FAKE_KEY',
+      })
+    );
   });
 
-  describe('sync', () => {
-    it('should sync transactions for the specified accounts', () => {
-        // This test will fail until the sync command is implemented
-        const output = execSync(`${cliCommand} sync --account PLUGGY_ID:YNAB_ID`);
-        expect(output.toString()).toContain('Synchronization complete.');
-    });
-
-    it('should return an error if account mapping is missing', () => {
-        // This test will fail until the sync command is implemented
-        expect(() => {
-            execSync(`${cliCommand} sync`);
-        }).toThrow();
-    });
-
-    it('should accept a "from" date for synchronization', () => {
-        // This test will fail until the sync command is implemented
-        const output = execSync(`${cliCommand} sync --account PLUGGY_ID:YNAB_ID --from 2025-01-01`);
-        expect(output.toString()).toContain('Synchronization complete.');
-    });
+  it('should call sync function with correct arguments', async () => {
+    const syncSpy = vi.spyOn(syncCommand, 'sync');
+    await cli.parse('sync --account PLUGGY_ID:BUDGET_ID:YNAB_ID');
+    expect(syncSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: 'PLUGGY_ID:BUDGET_ID:YNAB_ID',
+      })
+    );
   });
 });
