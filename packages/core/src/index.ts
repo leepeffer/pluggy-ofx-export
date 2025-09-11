@@ -3,6 +3,7 @@ import {
   OFXBankAccountInfo,
   OFXBankFile,
   OFXCCFile,
+  OFXInvestmentFile,
   type OFXFile,
   OFXTransaction,
 } from "./ofx.js";
@@ -23,22 +24,43 @@ export class Client {
   }
 
   private findBankInfo(accounts: Account[]): OFXBankAccountInfo | undefined {
+    // First try to find a BANK account with transferNumber
     const bankAcc = accounts.find((acc) => acc.type === "BANK");
-    if (!bankAcc) return undefined;
-
-    const transferNumber = bankAcc.bankData?.transferNumber?.split("/");
-    if (!transferNumber) {
-      return undefined;
+    if (bankAcc) {
+      const transferNumber = bankAcc.bankData?.transferNumber?.split("/");
+      if (transferNumber) {
+        const fid = transferNumber[0];
+        const branch = transferNumber[1].replace("-", "");
+        const accountNumber = transferNumber[2].replace("-", "");
+        return {
+          orgName: bankAcc.name,
+          fid: parseInt(fid),
+          accountNumber,
+          branch,
+        };
+      }
     }
-    const fid = transferNumber[0];
-    const branch = transferNumber[1].replace("-", "");
-    const accountNumber = transferNumber[2].replace("-", "");
-    return {
-      orgName: bankAcc.name,
-      fid: parseInt(fid),
-      accountNumber,
-      branch,
-    };
+
+    // If no BANK account with transferNumber, try to use any available account
+    // This handles credit card only items and investment only items
+    const anyAcc = accounts.find((acc) => acc.type === "BANK" || acc.type === "CREDIT" || acc.type === "INVESTMENT");
+    if (anyAcc) {
+      // For credit card only items, create a generic bank info
+      // Use a default FID and derive other info from the account
+      const orgName = anyAcc.name;
+      const fid = 9999; // Default FID for credit card only items
+      const branch = "0001"; // Default branch
+      const accountNumber = anyAcc.number || anyAcc.id.slice(-8); // Use account number or last 8 chars of ID
+      
+      return {
+        orgName,
+        fid,
+        accountNumber,
+        branch,
+      };
+    }
+
+    return undefined;
   }
 
   async outputOFXFiles(
@@ -97,6 +119,16 @@ export class Client {
               dateStart,
               dateEnd,
               acc.name,
+            );
+            break;
+          case "INVESTMENT":
+            ofxFile = new OFXInvestmentFile(
+              bankInfo,
+              acc.currencyCode,
+              dateStart,
+              dateEnd,
+              acc.name,
+              acc.number,
             );
             break;
           default:

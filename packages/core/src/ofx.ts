@@ -299,3 +299,64 @@ export class OFXCCFile extends OFXFile {
     );
   }
 }
+
+export class OFXInvestmentFile extends OFXFile {
+  private accountName?: string;
+  private accountNumber?: string;
+
+  constructor(
+    accountInfo: OFXBankAccountInfo,
+    currency: string,
+    dateStart: Date,
+    dateEnd: Date,
+    accountName?: string,
+    accountNumber?: string,
+  ) {
+    super(accountInfo, currency, dateStart, dateEnd);
+    this.accountName = accountName;
+    this.accountNumber = accountNumber;
+  }
+
+  override getSuggestedFileName(): string {
+    const bankName = this.accountInfo.orgName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+    const accountSuffix = this.accountNumber ? `-${this.accountNumber.slice(-4)}` : '';
+    const nameSuffix = this.accountName ? `-${this.accountName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15)}` : '';
+    
+    return `${bankName}-investment${accountSuffix}${nameSuffix}-${formatFileNameDate(this.dateStart)}-${formatFileNameDate(this.dateEnd)}.ofx`;
+  }
+
+  private outputInvestmentMsg(): string {
+    return `
+    <INVSTMTMSGSRSV1>
+      <INVSTMTTRNRS>
+        <TRNUID>2001</TRNUID>
+        <STATUS>
+          <CODE>0</CODE>
+          <SEVERITY>INFO</SEVERITY>
+        </STATUS>
+        <INVSTMTRS>
+          <CURDEF>${this.currency}</CURDEF>
+          <INVACCTFROM>
+            <ACCTID>${this.accountNumber || this.accountName}</ACCTID>
+          </INVACCTFROM>
+          <INVTRANLIST>
+            <DTSTART>${formatOFXDate(this.dateStart)}</DTSTART>
+            <DTEND>${formatOFXDate(this.dateEnd)}</DTEND>
+            ${this.transactions.map((tx) => tx.output()).join("\n")}
+          </INVTRANLIST>
+          ${this.balance?.output()}
+        </INVSTMTRS>
+      </INVSTMTTRNRS>
+    </INVSTMTMSGSRSV1>
+    `;
+  }
+
+  override output(): string {
+    return outputOFXBase(
+      this.accountInfo,
+      this.dateServer,
+      this.language,
+      this.outputInvestmentMsg(),
+    );
+  }
+}
