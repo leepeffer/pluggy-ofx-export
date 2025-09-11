@@ -30,19 +30,9 @@ yargs(hideBin(process.argv))
   .command(
     'sync',
     'Synchronize transactions',
-    (yargs) => {
-      return yargs
-        .option('account', {
-          describe: 'Account mapping in the format pluggy_account_id:ynab_budget_id:ynab_account_id',
-          type: 'string',
-        })
-        .option('from', {
-          describe: 'Start date for synchronization (YYYY-MM-DD)',
-          type: 'string',
-        });
-    },
-    (argv) => {
-      sync(argv);
+    () => {},
+    () => {
+      sync();
     }
   )
   .demandCommand(1, 'You need at least one command before moving on')

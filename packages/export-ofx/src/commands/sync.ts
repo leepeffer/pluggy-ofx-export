@@ -1,46 +1,39 @@
 import { logger, YnabClient, Client as PluggyClient, Synchronizer } from '@pluggy-ofx-export/core';
 
-interface SyncOptions {
-  account?: string | string[];
-  from?: string;
+interface AccountConfig {
+  name: string;
+  pluggy_id: string;
+  ynab_budget_id: string;
+  ynab_account_id: string;
+  type: 'BANK' | 'CREDIT';
 }
 
-export async function sync(options: SyncOptions) {
-  if (!options.account) {
-    logger.error('At least one --account mapping is required.');
+export async function sync() {
+  const {
+    ACCOUNT_CONFIG,
+    YNAB_API_KEY,
+    PLUGGY_CLIENT_ID,
+    PLUGGY_CLIENT_SECRET,
+  } = process.env;
+
+  if (!ACCOUNT_CONFIG || !YNAB_API_KEY || !PLUGGY_CLIENT_ID || !PLUGGY_CLIENT_SECRET) {
+    logger.error('All required environment variables must be set: ACCOUNT_CONFIG, YNAB_API_KEY, PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET');
     process.exit(1);
   }
 
-  const ynabApiKey = process.env.YNAB_API_KEY;
-  if (!ynabApiKey) {
-    logger.error('YNAB_API_KEY environment variable is not set.');
-    process.exit(1);
-  }
+  const accountConfigs: AccountConfig[] = JSON.parse(ACCOUNT_CONFIG);
 
-  const pluggyClientId = process.env.PLUGGY_CLIENT_ID;
-  const pluggyClientSecret = process.env.PLUGGY_CLIENT_SECRET;
-  if (!pluggyClientId || !pluggyClientSecret) {
-    logger.error('PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET environment variables are not set.');
-    process.exit(1);
-  }
-
-  const ynabClient = new YnabClient(ynabApiKey);
-  const pluggyClient = new PluggyClient({ clientId: pluggyClientId, clientSecret: pluggyClientSecret });
+  const ynabClient = new YnabClient(YNAB_API_KEY);
+  const pluggyClient = new PluggyClient({ clientId: PLUGGY_CLIENT_ID, clientSecret: PLUGGY_CLIENT_SECRET });
   const synchronizer = new Synchronizer(pluggyClient, ynabClient);
 
   logger.info('Synchronization started.');
 
-  const accounts = Array.isArray(options.account) ? options.account : [options.account];
-
-  for (const account of accounts) {
-    const [pluggyAccountId, ynabBudgetId, ynabAccountId] = account.split(':');
-    if (!pluggyAccountId || !ynabBudgetId || !ynabAccountId) {
-        logger.error(`Invalid account mapping: ${account}. Expected format: pluggy_account_id:ynab_budget_id:ynab_account_id`);
-        continue;
-    }
-
-    const fromDate = options.from ? new Date(options.from) : new Date(new Date().setMonth(new Date().getMonth() - 1));
-    await synchronizer.sync(pluggyAccountId, ynabBudgetId, ynabAccountId, fromDate);
+  for (const config of accountConfigs) {
+    const { name, pluggy_id, ynab_budget_id, ynab_account_id } = config;
+    logger.info(`Syncing account: ${name}`);
+    const fromDate = new Date(new Date().setMonth(new Date().getMonth() - 1)); // default to last month
+    await synchronizer.sync(pluggy_id, ynab_budget_id, ynab_account_id, fromDate);
   }
 
   logger.info('Synchronization complete.');

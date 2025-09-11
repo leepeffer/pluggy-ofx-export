@@ -30,19 +30,9 @@ const cli = yargs(hideBin(process.argv))
   .command(
     'sync',
     'Synchronize transactions',
-    (yargs) => {
-      return yargs
-        .option('account', {
-          describe: 'Account mapping in the format pluggy_account_id:ynab_budget_id:ynab_account_id',
-          type: 'string',
-        })
-        .option('from', {
-          describe: 'Start date for synchronization (YYYY-MM-DD)',
-          type: 'string',
-        });
-    },
-    (argv) => {
-      syncCommand.sync(argv);
+    () => {},
+    () => {
+      syncCommand.sync();
     }
   )
   .demandCommand(1, 'You need at least one command before moving on')
@@ -61,13 +51,9 @@ describe('CLI Contracts', () => {
     );
   });
 
-  it('should call sync function with correct arguments', async () => {
+  it('should call sync function', async () => {
     const syncSpy = vi.spyOn(syncCommand, 'sync');
-    await cli.parse('sync --account PLUGGY_ID:BUDGET_ID:YNAB_ID');
-    expect(syncSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        account: 'PLUGGY_ID:BUDGET_ID:YNAB_ID',
-      })
-    );
+    await cli.parse('sync');
+    expect(syncSpy).toHaveBeenCalled();
   });
 });

@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Itaú Conta Corrente",
+    "pluggy_id": "pluggy_item_12345_account_001",
+    "ynab_budget_id": "budget_abc123def456",
+    "ynab_account_id": "account_789xyz012",
+    "type": "BANK"
+  },
+  {
+    "name": "Nubank Mastercard Black",
+    "pluggy_id": "pluggy_item_67890_account_002",
+    "ynab_budget_id": "budget_abc123def456",
+    "ynab_account_id": "account_456def789",
+    "type": "CREDIT"
+  },
+  {
+    "name": "Nubank Platinum",
+    "pluggy_id": "pluggy_item_67890_account_003",
+    "ynab_budget_id": "budget_abc123def456",
+    "ynab_account_id": "account_789ghi012",
+    "type": "CREDIT"
+  },
+  {
+    "name": "Nubank Conta Corrente 70-6",
+    "pluggy_id": "pluggy_item_67890_account_004",
+    "ynab_budget_id": "budget_abc123def456",
+    "ynab_account_id": "account_012jkl345",
+    "type": "BANK"
+  },
+  {
+    "name": "Pão de Açúcar Platinum",
+    "pluggy_id": "pluggy_item_11111_account_005",
+    "ynab_budget_id": "budget_abc123def456",
+    "ynab_account_id": "account_345mno678",
+    "type": "CREDIT"
+  }
+]

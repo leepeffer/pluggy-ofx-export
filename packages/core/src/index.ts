@@ -182,6 +182,10 @@ export class Client {
   async fetchTransactions(accountId: string, options: { from: string, to: string }) {
     return this.client.fetchTransactions(accountId, options);
   }
+
+  async fetchAccounts(itemId: string) {
+    return this.client.fetchAccounts(itemId);
+  }
 }
 
 export * from './logger';
