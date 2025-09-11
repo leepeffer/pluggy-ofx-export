@@ -35,17 +35,27 @@ export class YnabClient {
     return response.data.data.accounts;
   }
 
-  async createTransactions(budgetId: string, accountId: string, transactions: Partial<Transaction>[]) {
-    const ynabTransactions = transactions.map(t => ({
+  async createTransactions(budgetId: string, accountId: string, transactions: Partial<Transaction>[], accountType: 'BANK' | 'CREDIT') {
+    const ynabTransactions = transactions.map(t => {
+      let amount = t.amount ? Math.round(t.amount * 1000) : 0;
+      
+      // For CREDIT accounts, invert the amount so expenses show as outflows
+      if (accountType === 'CREDIT') {
+        amount = -amount;
+      }
+      
+      return {
         // YNAB API requires amount in milliunits (integer)
-        amount: t.amount ? Math.round(t.amount * 1000) : 0,
+        amount: amount,
         date: t.date?.toISOString().split('T')[0],
-        memo: t.description,
+        // Move description to payee field instead of memo
+        payee_name: t.description,
         // import_id is used for duplicate detection
         import_id: t.id,
         // YNAB API requires account field
         account_id: accountId,
-    }));
+      };
+    });
 
     return this.client.post(`/budgets/${budgetId}/transactions`, {
       transactions: ynabTransactions,

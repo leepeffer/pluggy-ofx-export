@@ -57,7 +57,7 @@ export class Synchronizer {
       connectionId: ynabAccountId,
     }));
 
-    await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload);
+    await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload, accountType);
 
     logger.info(`Synced ${newTransactions.length} transactions.`);
   }
