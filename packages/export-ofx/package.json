@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@pluggy-ofx-export/core": "workspace:^",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "pino": "^9.9.5"
   }
 }
