@@ -35,14 +35,16 @@ export class YnabClient {
     return response.data.data.accounts;
   }
 
-  async createTransactions(budgetId: string, transactions: Partial<Transaction>[]) {
+  async createTransactions(budgetId: string, accountId: string, transactions: Partial<Transaction>[]) {
     const ynabTransactions = transactions.map(t => ({
-        // YNAB API requires amount in milliunits
-        amount: t.amount ? t.amount * 1000 : 0,
+        // YNAB API requires amount in milliunits (integer)
+        amount: t.amount ? Math.round(t.amount * 1000) : 0,
         date: t.date?.toISOString().split('T')[0],
         memo: t.description,
         // import_id is used for duplicate detection
         import_id: t.id,
+        // YNAB API requires account field
+        account_id: accountId,
     }));
 
     return this.client.post(`/budgets/${budgetId}/transactions`, {

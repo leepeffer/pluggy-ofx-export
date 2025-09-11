@@ -5,17 +5,29 @@ export class Synchronizer {
   constructor(private pluggyClient: PluggyClient, private ynabClient: YnabClient) {}
 
   async sync(
-    pluggyAccountId: string,
+    pluggyItemId: string,
+    accountType: 'BANK' | 'CREDIT',
     ynabBudgetId: string,
     ynabAccountId: string,
     fromDate: Date
   ) {
     logger.info(
-      `Starting sync for Pluggy account ${pluggyAccountId} to YNAB account ${ynabAccountId}`
+      `Starting sync for Pluggy item ${pluggyItemId} (${accountType}) to YNAB account ${ynabAccountId}`
     );
 
+    // First, get all accounts from the Pluggy item
+    const accounts = await this.pluggyClient.fetchAccounts(pluggyItemId);
+    const targetAccount = accounts.results.find(account => account.type === accountType);
+    
+    if (!targetAccount) {
+      logger.warn(`No ${accountType} account found in Pluggy item ${pluggyItemId}`);
+      return;
+    }
+
+    logger.info(`Found ${accountType} account: ${targetAccount.name} (${targetAccount.id})`);
+
     const toDate = new Date();
-    const pluggyTransactions = await this.pluggyClient.fetchTransactions(pluggyAccountId, {
+    const pluggyTransactions = await this.pluggyClient.fetchTransactions(targetAccount.id, {
       from: fromDate.toISOString().split('T')[0],
       to: toDate.toISOString().split('T')[0],
     });
@@ -45,7 +57,7 @@ export class Synchronizer {
       connectionId: ynabAccountId,
     }));
 
-    await this.ynabClient.createTransactions(ynabBudgetId, ynabPayload);
+    await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload);
 
     logger.info(`Synced ${newTransactions.length} transactions.`);
   }

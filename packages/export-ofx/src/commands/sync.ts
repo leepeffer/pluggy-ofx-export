@@ -30,10 +30,10 @@ export async function sync() {
   logger.info('Synchronization started.');
 
   for (const config of accountConfigs) {
-    const { name, pluggy_id, ynab_budget_id, ynab_account_id } = config;
-    logger.info(`Syncing account: ${name}`);
+    const { name, pluggy_id, ynab_budget_id, ynab_account_id, type } = config;
+    logger.info(`Syncing account: ${name} (${type})`);
     const fromDate = new Date(new Date().setMonth(new Date().getMonth() - 1)); // default to last month
-    await synchronizer.sync(pluggy_id, ynab_budget_id, ynab_account_id, fromDate);
+    await synchronizer.sync(pluggy_id, type, ynab_budget_id, ynab_account_id, fromDate);
   }
 
   logger.info('Synchronization complete.');
