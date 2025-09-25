@@ -24,6 +24,7 @@ describe('sync command', () => {
         pluggy_id: 'pluggy_id_1',
         ynab_budget_id: 'ynab_budget_id_1',
         ynab_account_id: 'ynab_account_id_1',
+        type: 'BANK',
       },
     ]);
 
@@ -32,6 +33,7 @@ describe('sync command', () => {
     expect(Synchronizer).toHaveBeenCalled();
     expect(synchronizerSyncSpy).toHaveBeenCalledWith(
       'pluggy_id_1',
+      'BANK',
       'ynab_budget_id_1',
       'ynab_account_id_1',
       expect.any(Date)

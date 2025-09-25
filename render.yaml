@@ -1,0 +1,6 @@
+services:
+  - type: cron
+    name: pluggy-ofx-export-sync
+    schedule: "0 0 * * *"
+    buildCommand: "pnpm install && pnpm --filter core build"
+    startCommand: "pnpm --filter export-ofx sync"

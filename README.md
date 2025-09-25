@@ -69,6 +69,21 @@ npx tsx ./packages/export-ofx/bin/index.ts sync
 
 The tool will fetch new transactions from Pluggy.ai and export them to your YNAB account based on the configurations you provided.
 
+### Deployment to Render.com
+
+This project can be deployed as a cron job on Render.com to run the synchronization automatically.
+
+1.  **Fork this repository** to your GitHub account.
+2.  **Create a new "Cron Job"** service on the [Render Dashboard](https://dashboard.render.com/).
+3.  **Connect your forked repository**.
+4.  Render will automatically detect the `render.yaml` file and configure the cron job.
+5.  **Add your environment variables** in the "Environment" tab of your new service. You will need to set the following:
+    -   `MOCK_ACCOUNT_CONFIG`
+    -   `YNAB_ACCESS_TOKEN`
+    -   `PLUGGY_CLIENT_ID`
+    -   `PLUGGY_CLIENT_SECRET`
+6.  The cron job will now run on the schedule defined in `render.yaml` (daily at midnight UTC by default).
+
 ## Features
 
 - **Web Interface**: Modern, user-friendly interface for easy OFX export
