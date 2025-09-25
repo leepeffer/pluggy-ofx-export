@@ -78,8 +78,8 @@ This project can be deployed as a cron job on Render.com to run the synchronizat
 3.  **Connect your forked repository**.
 4.  Render will automatically detect the `render.yaml` file and configure the cron job.
 5.  **Add your environment variables** in the "Environment" tab of your new service. You will need to set the following:
-    -   `MOCK_ACCOUNT_CONFIG`
-    -   `YNAB_ACCESS_TOKEN`
+    -   `ACCOUNT_CONFIG`
+    -   `YNAB_API_KEY`
     -   `PLUGGY_CLIENT_ID`
     -   `PLUGGY_CLIENT_SECRET`
 6.  The cron job will now run on the schedule defined in `render.yaml` (daily at midnight UTC by default).
