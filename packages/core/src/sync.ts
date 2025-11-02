@@ -38,11 +38,53 @@ export class Synchronizer {
     }
 
     const ynabTransactions = await this.ynabClient.getTransactions(ynabBudgetId, ynabAccountId, fromDate);
-    const existingYnabImportIds = new Set(ynabTransactions.map(t => t.import_id));
-
-    const newTransactions = pluggyTransactions.results.filter(
-      t => !existingYnabImportIds.has(t.id)
+    
+    // Helper function to normalize Pluggy amount to YNAB milliunits
+    const normalizeAmount = (amount: number, isCredit: boolean): number => {
+      let normalized = Math.round(amount * 1000);
+      if (isCredit) {
+        normalized = -normalized;
+      }
+      return normalized;
+    };
+    
+    // Helper function to normalize Pluggy date to ISO format (YYYY-MM-DD)
+    const normalizeDate = (date: Date | string): string => {
+      return new Date(date).toISOString().split('T')[0];
+    };
+    
+    // Build lookup structures from existing YNAB transactions
+    // 1. Set of existing import_ids (filter out null/undefined)
+    const existingYnabImportIds = new Set(
+      ynabTransactions.map(t => t.import_id).filter(id => id)
     );
+    
+    // 2. Set of date+amount combinations for secondary duplicate check
+    const existingYnabDateAmounts = new Set(
+      ynabTransactions.map(t => `${t.date}:${t.amount}`)
+    );
+    
+    // Filter transactions using two-tier duplicate detection
+    const newTransactions = pluggyTransactions.results.filter(pluggyTx => {
+      // Primary check: If import_id matches, skip (duplicate)
+      if (existingYnabImportIds.has(pluggyTx.id)) {
+        logger.debug(`Skipping duplicate by import_id: ${pluggyTx.id}`);
+        return false;
+      }
+      
+      // Secondary check: If date + amount match, skip (duplicate)
+      const normalizedAmount = normalizeAmount(pluggyTx.amount, accountType === 'CREDIT');
+      const normalizedDate = normalizeDate(pluggyTx.date);
+      const dateAmountKey = `${normalizedDate}:${normalizedAmount}`;
+      
+      if (existingYnabDateAmounts.has(dateAmountKey)) {
+        logger.debug(`Skipping duplicate by date+amount: ${pluggyTx.id} (${dateAmountKey})`);
+        return false;
+      }
+      
+      // Not a duplicate - include this transaction
+      return true;
+    });
 
     if (newTransactions.length === 0) {
       logger.info('No new transactions to sync.');
