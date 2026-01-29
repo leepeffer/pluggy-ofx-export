@@ -6,7 +6,7 @@ export interface SyncResult {
   accountType: 'BANK' | 'CREDIT';
   transactionsFound: number;
   transactionsSynced: number;
-  transactions: { date: string; description: string; amount: number }[];
+  transactions: { date: string; description: string; amount: number; displayAmount: string }[];
   status: 'success' | 'skipped' | 'error';
   message?: string;
 }
@@ -100,11 +100,16 @@ export class Synchronizer {
       accountType,
       transactionsFound: pluggyTransactions.results.length,
       transactionsSynced: newTransactions.length,
-      transactions: newTransactions.map(t => ({
-        date: t.date,
-        description: t.description,
-        amount: t.amount,
-      })),
+      transactions: newTransactions.map(t => {
+        // For CREDIT accounts, invert the sign (same logic as ynab-client.ts)
+        const displayAmount = accountType === 'CREDIT' ? -t.amount : t.amount;
+        return {
+          date: typeof t.date === 'string' ? t.date.split('T')[0] : t.date,
+          description: t.description,
+          amount: t.amount,
+          displayAmount: displayAmount.toFixed(2),
+        };
+      }),
       status: 'success',
     };
   }

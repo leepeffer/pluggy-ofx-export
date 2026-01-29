@@ -75,8 +75,9 @@ jobs:
                 md += '| Date | Description | Amount |\n';
                 md += '|------|-------------|--------|\n';
                 for (const tx of result.transactions) {
-                  const amount = (tx.amount / 100).toFixed(2);
-                  md += '| ' + tx.date + ' | ' + tx.description.substring(0, 40) + ' | ' + amount + ' |\n';
+                  // Escape pipe characters in description to not break markdown table
+                  const desc = (tx.description || '').substring(0, 40).replace(/\|/g, '-');
+                  md += '| ' + tx.date + ' | ' + desc + ' | ' + tx.displayAmount + ' |\n';
                 }
                 md += '\n</details>\n';
               }
