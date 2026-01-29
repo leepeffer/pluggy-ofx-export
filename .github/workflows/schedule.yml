@@ -53,9 +53,16 @@ jobs:
             const summary = JSON.parse(fs.readFileSync('summary.json', 'utf8'));
             
             let md = '# 📊 Sync Report\n\n';
-            md += '**Run Time:** ' + new Date(summary.timestamp).toLocaleString() + '\n\n';
-            md += '**Total Accounts:** ' + summary.totalAccounts + '\n';
-            md += '**Total Transactions Synced:** ' + summary.totalTransactionsSynced + '\n\n';
+            md += '**Run Time:** ' + new Date(summary.timestamp).toLocaleString() + '\n';
+            md += '**Date Range:** ' + summary.dateRange.from + ' to ' + summary.dateRange.to + '\n\n';
+            
+            md += '## Summary\n';
+            md += '| Metric | Count |\n';
+            md += '|--------|-------|\n';
+            md += '| Accounts Processed | ' + summary.totalAccounts + ' |\n';
+            md += '| Total Transactions Found | ' + summary.totalTransactionsFound + ' |\n';
+            md += '| Duplicates Skipped | ' + summary.totalDuplicatesSkipped + ' |\n';
+            md += '| **New Transactions Pushed** | **' + summary.totalTransactionsSynced + '** |\n\n';
             
             md += '## Account Details\n\n';
             
@@ -65,7 +72,8 @@ jobs:
               md += '- **Account:** ' + result.accountName + ' (' + result.accountType + ')\n';
               md += '- **Status:** ' + result.status + '\n';
               md += '- **Transactions Found:** ' + result.transactionsFound + '\n';
-              md += '- **Transactions Synced:** ' + result.transactionsSynced + '\n';
+              md += '- **Duplicates Skipped:** ' + result.duplicatesSkipped + '\n';
+              md += '- **New Transactions Pushed:** ' + result.transactionsSynced + '\n';
               if (result.message) {
                 md += '- **Note:** ' + result.message + '\n';
               }

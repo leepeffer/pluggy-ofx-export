@@ -10,7 +10,10 @@ interface AccountConfig {
 
 interface SyncSummary {
   timestamp: string;
+  dateRange: { from: string; to: string };
   totalAccounts: number;
+  totalTransactionsFound: number;
+  totalDuplicatesSkipped: number;
   totalTransactionsSynced: number;
   results: (SyncResult & { configName: string })[];
 }
@@ -38,10 +41,16 @@ export async function sync() {
 
   const results: (SyncResult & { configName: string })[] = [];
 
+  const fromDate = new Date(new Date().setMonth(new Date().getMonth() - 1)); // default to last month
+  const toDate = new Date();
+  const dateRange = {
+    from: fromDate.toISOString().split('T')[0],
+    to: toDate.toISOString().split('T')[0],
+  };
+
   for (const config of accountConfigs) {
     const { name, pluggy_id, ynab_budget_id, ynab_account_id, type } = config;
     logger.info(`Syncing account: ${name} (${type})`);
-    const fromDate = new Date(new Date().setMonth(new Date().getMonth() - 1)); // default to last month
     const result = await synchronizer.sync(pluggy_id, type, ynab_budget_id, ynab_account_id, fromDate);
     results.push({ ...result, configName: name });
   }
@@ -51,7 +60,10 @@ export async function sync() {
   // Output summary as JSON for GitHub Actions
   const summary: SyncSummary = {
     timestamp: new Date().toISOString(),
+    dateRange,
     totalAccounts: results.length,
+    totalTransactionsFound: results.reduce((sum, r) => sum + r.transactionsFound, 0),
+    totalDuplicatesSkipped: results.reduce((sum, r) => sum + r.duplicatesSkipped, 0),
     totalTransactionsSynced: results.reduce((sum, r) => sum + r.transactionsSynced, 0),
     results,
   };
