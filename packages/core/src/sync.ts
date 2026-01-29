@@ -1,6 +1,16 @@
 import { Client as PluggyClient, YnabClient, Transaction } from '.';
 import { logger } from './logger';
 
+export interface SyncResult {
+  accountName: string;
+  accountType: 'BANK' | 'CREDIT';
+  transactionsFound: number;
+  transactionsSynced: number;
+  transactions: { date: string; description: string; amount: number }[];
+  status: 'success' | 'skipped' | 'error';
+  message?: string;
+}
+
 export class Synchronizer {
   constructor(private pluggyClient: PluggyClient, private ynabClient: YnabClient) {}
 
@@ -10,7 +20,7 @@ export class Synchronizer {
     ynabBudgetId: string,
     ynabAccountId: string,
     fromDate: Date
-  ) {
+  ): Promise<SyncResult> {
     logger.info(
       `Starting sync for Pluggy item ${pluggyItemId} (${accountType}) to YNAB account ${ynabAccountId}`
     );
@@ -21,7 +31,15 @@ export class Synchronizer {
     
     if (!targetAccount) {
       logger.warn(`No ${accountType} account found in Pluggy item ${pluggyItemId}`);
-      return;
+      return {
+        accountName: 'Unknown',
+        accountType,
+        transactionsFound: 0,
+        transactionsSynced: 0,
+        transactions: [],
+        status: 'skipped',
+        message: `No ${accountType} account found in Pluggy item`,
+      };
     }
 
     logger.info(`Found ${accountType} account: ${targetAccount.name} (${targetAccount.id})`);
@@ -34,7 +52,15 @@ export class Synchronizer {
 
     if (pluggyTransactions.results.length === 0) {
       logger.info('No new transactions to sync.');
-      return;
+      return {
+        accountName: targetAccount.name,
+        accountType,
+        transactionsFound: 0,
+        transactionsSynced: 0,
+        transactions: [],
+        status: 'success',
+        message: 'No transactions found in date range',
+      };
     }
 
     const ynabTransactions = await this.ynabClient.getTransactions(ynabBudgetId, ynabAccountId, fromDate);
@@ -46,7 +72,15 @@ export class Synchronizer {
 
     if (newTransactions.length === 0) {
       logger.info('No new transactions to sync.');
-      return;
+      return {
+        accountName: targetAccount.name,
+        accountType,
+        transactionsFound: pluggyTransactions.results.length,
+        transactionsSynced: 0,
+        transactions: [],
+        status: 'success',
+        message: 'All transactions already synced',
+      };
     }
 
     const ynabPayload: Partial<Transaction>[] = newTransactions.map(t => ({
@@ -60,5 +94,18 @@ export class Synchronizer {
     await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload, accountType);
 
     logger.info(`Synced ${newTransactions.length} transactions.`);
+
+    return {
+      accountName: targetAccount.name,
+      accountType,
+      transactionsFound: pluggyTransactions.results.length,
+      transactionsSynced: newTransactions.length,
+      transactions: newTransactions.map(t => ({
+        date: t.date,
+        description: t.description,
+        amount: t.amount,
+      })),
+      status: 'success',
+    };
   }
 }

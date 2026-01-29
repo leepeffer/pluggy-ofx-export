@@ -1,4 +1,4 @@
-import { logger, YnabClient, Client as PluggyClient, Synchronizer } from '@pluggy-ofx-export/core';
+import { logger, YnabClient, Client as PluggyClient, Synchronizer, SyncResult } from '@pluggy-ofx-export/core';
 
 interface AccountConfig {
   name: string;
@@ -6,6 +6,13 @@ interface AccountConfig {
   ynab_budget_id: string;
   ynab_account_id: string;
   type: 'BANK' | 'CREDIT';
+}
+
+interface SyncSummary {
+  timestamp: string;
+  totalAccounts: number;
+  totalTransactionsSynced: number;
+  results: (SyncResult & { configName: string })[];
 }
 
 export async function sync() {
@@ -29,12 +36,28 @@ export async function sync() {
 
   logger.info('Synchronization started.');
 
+  const results: (SyncResult & { configName: string })[] = [];
+
   for (const config of accountConfigs) {
     const { name, pluggy_id, ynab_budget_id, ynab_account_id, type } = config;
     logger.info(`Syncing account: ${name} (${type})`);
     const fromDate = new Date(new Date().setMonth(new Date().getMonth() - 1)); // default to last month
-    await synchronizer.sync(pluggy_id, type, ynab_budget_id, ynab_account_id, fromDate);
+    const result = await synchronizer.sync(pluggy_id, type, ynab_budget_id, ynab_account_id, fromDate);
+    results.push({ ...result, configName: name });
   }
 
   logger.info('Synchronization complete.');
+
+  // Output summary as JSON for GitHub Actions
+  const summary: SyncSummary = {
+    timestamp: new Date().toISOString(),
+    totalAccounts: results.length,
+    totalTransactionsSynced: results.reduce((sum, r) => sum + r.transactionsSynced, 0),
+    results,
+  };
+
+  // Output the summary marker and JSON for the workflow to parse
+  console.log('::SYNC_SUMMARY_START::');
+  console.log(JSON.stringify(summary, null, 2));
+  console.log('::SYNC_SUMMARY_END::');
 }

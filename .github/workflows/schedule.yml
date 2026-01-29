@@ -29,14 +29,64 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build core package
-        run: pnpm --filter core build
-
       - name: Run sync
+        id: sync
         env:
           PLUGGY_CLIENT_ID: ${{ secrets.PLUGGY_CLIENT_ID }}
           PLUGGY_CLIENT_SECRET: ${{ secrets.PLUGGY_CLIENT_SECRET }}
           PLUGGY_ITEM_IDS: ${{ secrets.PLUGGY_ITEM_IDS }}
           YNAB_API_KEY: ${{ secrets.YNAB_API_KEY }}
           ACCOUNT_CONFIG: ${{ secrets.ACCOUNT_CONFIG }}
-        run: pnpm export-ofx sync
+        run: |
+          pnpm export-ofx sync 2>&1 | tee sync_output.txt
+
+      - name: Generate summary report
+        if: always()
+        run: |
+          # Extract JSON between markers
+          if grep -q "::SYNC_SUMMARY_START::" sync_output.txt; then
+            sed -n '/::SYNC_SUMMARY_START::/,/::SYNC_SUMMARY_END::/p' sync_output.txt | grep -v '::SYNC_SUMMARY' > summary.json
+            
+            # Parse and generate markdown
+            node << 'EOF'
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('summary.json', 'utf8'));
+            
+            let md = `# 📊 Sync Report\n\n`;
+            md += `**Run Time:** ${new Date(summary.timestamp).toLocaleString()}\n\n`;
+            md += `**Total Accounts:** ${summary.totalAccounts}\n`;
+            md += `**Total Transactions Synced:** ${summary.totalTransactionsSynced}\n\n`;
+            
+            md += `## Account Details\n\n`;
+            
+            for (const result of summary.results) {
+              const icon = result.status === 'success' ? '✅' : result.status === 'skipped' ? '⏭️' : '❌';
+              md += `### ${icon} ${result.configName}\n`;
+              md += `- **Account:** ${result.accountName} (${result.accountType})\n`;
+              md += `- **Status:** ${result.status}\n`;
+              md += `- **Transactions Found:** ${result.transactionsFound}\n`;
+              md += `- **Transactions Synced:** ${result.transactionsSynced}\n`;
+              if (result.message) {
+                md += `- **Note:** ${result.message}\n`;
+              }
+              
+              if (result.transactions && result.transactions.length > 0) {
+                md += `\n<details>\n<summary>View ${result.transactions.length} synced transactions</summary>\n\n`;
+                md += `| Date | Description | Amount |\n`;
+                md += `|------|-------------|--------|\n`;
+                for (const tx of result.transactions) {
+                  const amount = (tx.amount / 100).toFixed(2);
+                  md += `| ${tx.date} | ${tx.description.substring(0, 40)} | ${amount} |\n`;
+                }
+                md += `\n</details>\n`;
+              }
+              md += `\n`;
+            }
+            
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+            EOF
+          else
+            echo "## ⚠️ Sync Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No summary data was generated. Check the logs for details." >> $GITHUB_STEP_SUMMARY
+          fi
