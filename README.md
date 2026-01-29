@@ -84,6 +84,25 @@ This project can be deployed as a cron job on Render.com to run the synchronizat
     -   `PLUGGY_CLIENT_SECRET`
 6.  The cron job will now run on the schedule defined in `render.yaml` (daily at midnight UTC by default).
 
+### Deployment to GitHub Actions
+
+Alternatively, you can run the sync as a scheduled GitHub Actions workflow directly from your repository.
+
+1.  **Fork this repository** to your GitHub account.
+2.  **Add Repository Secrets** in your forked repo:
+    - Go to **Settings** → **Secrets and variables** → **Actions**
+    - Click **New repository secret** and add each of the following:
+      - `PLUGGY_CLIENT_ID` - Your Pluggy API client ID
+      - `PLUGGY_CLIENT_SECRET` - Your Pluggy API client secret
+      - `PLUGGY_ITEM_IDS` - Comma-separated list of your Pluggy item IDs
+      - `YNAB_API_KEY` - Your YNAB API key
+      - `ACCOUNT_CONFIG` - JSON array mapping Pluggy accounts to YNAB (paste without outer quotes)
+3.  **Enable GitHub Actions** if not already enabled (Actions tab → enable workflows).
+4.  The workflow runs automatically at **2am UTC daily**.
+5.  **To test immediately**: Go to **Actions** → **Pluggy OFX Export Sync** → **Run workflow**.
+
+> **Note**: The workflow file is located at `.github/workflows/schedule.yml`. You can modify the cron schedule there if needed.
+
 ## Features
 
 - **Web Interface**: Modern, user-friendly interface for easy OFX export
