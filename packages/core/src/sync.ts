@@ -162,8 +162,12 @@ export class Synchronizer {
 
     // Combine all transactions for the report
     const allTransactions = [...skippedTransactions, ...sentTransactions];
-    // Sort by date descending
-    allTransactions.sort((a, b) => b.date.localeCompare(a.date));
+    // Sort by date descending (ensure dates are strings)
+    allTransactions.sort((a, b) => {
+      const dateA = String(a.date);
+      const dateB = String(b.date);
+      return dateB.localeCompare(dateA);
+    });
 
     return {
       accountName: targetAccount.name,
