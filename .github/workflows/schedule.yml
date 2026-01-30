@@ -52,6 +52,14 @@ jobs:
             const fs = require('fs');
             const summary = JSON.parse(fs.readFileSync('summary.json', 'utf8'));
             
+            // Status emoji mapping
+            const statusEmoji = {
+              'skipped_exists': '⏭️ SKIPPED (exists)',
+              'created': '✅ CREATED',
+              'created_reimport': '🔄 RE-IMPORTED (was deleted in YNAB)',
+              'rejected_duplicate': '❌ REJECTED (dup)'
+            };
+            
             let md = '# 📊 Sync Report\n\n';
             md += '**Run Time:** ' + new Date(summary.timestamp).toLocaleString() + '\n';
             md += '**Date Range:** ' + summary.dateRange.from + ' to ' + summary.dateRange.to + '\n\n';
@@ -60,9 +68,11 @@ jobs:
             md += '| Metric | Count |\n';
             md += '|--------|-------|\n';
             md += '| Accounts Processed | ' + summary.totalAccounts + ' |\n';
-            md += '| Total Transactions Found | ' + summary.totalTransactionsFound + ' |\n';
-            md += '| Duplicates Skipped | ' + summary.totalDuplicatesSkipped + ' |\n';
-            md += '| **New Transactions Pushed** | **' + summary.totalTransactionsSynced + '** |\n\n';
+            md += '| Transactions Found (from Pluggy) | ' + summary.totalTransactionsFound + ' |\n';
+            md += '| ⏭️ Skipped (already in YNAB) | ' + summary.totalSkippedExists + ' |\n';
+            md += '| Sent to YNAB | ' + summary.totalSentToYnab + ' |\n';
+            md += '| ❌ Rejected by YNAB (duplicates) | ' + summary.totalRejectedByYnab + ' |\n';
+            md += '| **✅ Actually Created in YNAB** | **' + summary.totalActuallyCreated + '** |\n\n';
             
             md += '## Account Details\n\n';
             
@@ -70,22 +80,23 @@ jobs:
               const icon = result.status === 'success' ? '✅' : result.status === 'skipped' ? '⏭️' : '❌';
               md += '### ' + icon + ' ' + result.configName + '\n';
               md += '- **Account:** ' + result.accountName + ' (' + result.accountType + ')\n';
-              md += '- **Status:** ' + result.status + '\n';
               md += '- **Transactions Found:** ' + result.transactionsFound + '\n';
-              md += '- **Duplicates Skipped:** ' + result.duplicatesSkipped + '\n';
-              md += '- **New Transactions Pushed:** ' + result.transactionsSynced + '\n';
+              md += '- **Skipped (exists):** ' + result.skippedExists + '\n';
+              md += '- **Sent to YNAB:** ' + result.sentToYnab + '\n';
+              md += '- **Rejected by YNAB:** ' + result.rejectedByYnab + '\n';
+              md += '- **Actually Created:** ' + result.actuallyCreated + '\n';
               if (result.message) {
                 md += '- **Note:** ' + result.message + '\n';
               }
               
               if (result.transactions && result.transactions.length > 0) {
-                md += '\n<details>\n<summary>View ' + result.transactions.length + ' synced transactions</summary>\n\n';
-                md += '| Date | Description | Amount |\n';
-                md += '|------|-------------|--------|\n';
+                md += '\n<details>\n<summary>📝 View all ' + result.transactions.length + ' transactions</summary>\n\n';
+                md += '| Date | Description | Amount | Status |\n';
+                md += '|------|-------------|--------|--------|\n';
                 for (const tx of result.transactions) {
-                  // Escape pipe characters in description to not break markdown table
-                  const desc = (tx.description || '').substring(0, 40).replace(/\|/g, '-');
-                  md += '| ' + tx.date + ' | ' + desc + ' | ' + tx.displayAmount + ' |\n';
+                  const desc = (tx.description || '').substring(0, 35).replace(/\|/g, '-');
+                  const statusLabel = statusEmoji[tx.status] || tx.status;
+                  md += '| ' + tx.date + ' | ' + desc + ' | ' + tx.displayAmount + ' | ' + statusLabel + ' |\n';
                 }
                 md += '\n</details>\n';
               }
