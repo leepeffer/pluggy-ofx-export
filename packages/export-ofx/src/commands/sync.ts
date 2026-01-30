@@ -13,7 +13,7 @@ interface SyncSummary {
   dateRange: { from: string; to: string };
   totalAccounts: number;
   totalTransactionsFound: number;
-  totalAlreadyInYnab: number;    // Duplicates detected before sending
+  totalSkippedExists: number;    // We detected these already exist in YNAB
   totalSentToYnab: number;       // What we attempted to send
   totalActuallyCreated: number;  // What YNAB actually created
   totalRejectedByYnab: number;   // What YNAB rejected as duplicates
@@ -65,7 +65,7 @@ export async function sync() {
     dateRange,
     totalAccounts: results.length,
     totalTransactionsFound: results.reduce((sum, r) => sum + r.transactionsFound, 0),
-    totalAlreadyInYnab: results.reduce((sum, r) => sum + r.alreadyInYnab, 0),
+    totalSkippedExists: results.reduce((sum, r) => sum + r.skippedExists, 0),
     totalSentToYnab: results.reduce((sum, r) => sum + r.sentToYnab, 0),
     totalActuallyCreated: results.reduce((sum, r) => sum + r.actuallyCreated, 0),
     totalRejectedByYnab: results.reduce((sum, r) => sum + r.rejectedByYnab, 0),

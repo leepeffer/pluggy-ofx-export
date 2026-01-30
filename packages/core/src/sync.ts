@@ -1,12 +1,18 @@
 import { Client as PluggyClient, YnabClient, Transaction } from '.';
 import { logger } from './logger';
 
+export type TransactionStatus = 
+  | 'skipped_exists'      // We detected it already exists in YNAB (import_id match)
+  | 'created'             // Sent to YNAB and successfully created
+  | 'rejected_duplicate'; // Sent to YNAB but rejected (import_id already used, even if deleted)
+
 export interface SyncedTransaction {
+  id: string;
   date: string;
   description: string;
   amount: number;
   displayAmount: string;
-  status: 'created' | 'duplicate';
+  status: TransactionStatus;
 }
 
 export interface SyncResult {
@@ -14,11 +20,11 @@ export interface SyncResult {
   accountType: 'BANK' | 'CREDIT';
   dateRange: { from: string; to: string };
   transactionsFound: number;
-  alreadyInYnab: number;  // Duplicates detected before sending to YNAB
-  sentToYnab: number;     // Transactions we attempted to send
-  actuallyCreated: number; // What YNAB actually created
-  rejectedByYnab: number;  // What YNAB rejected as duplicates
-  transactions: SyncedTransaction[];
+  skippedExists: number;    // We detected these already exist in YNAB
+  sentToYnab: number;       // Transactions we attempted to send
+  actuallyCreated: number;  // What YNAB actually created
+  rejectedByYnab: number;   // What YNAB rejected as duplicates
+  transactions: SyncedTransaction[];  // ALL transactions with their status
   status: 'success' | 'skipped' | 'error';
   message?: string;
 }
@@ -54,7 +60,7 @@ export class Synchronizer {
         accountType,
         dateRange,
         transactionsFound: 0,
-        alreadyInYnab: 0,
+        skippedExists: 0,
         sentToYnab: 0,
         actuallyCreated: 0,
         rejectedByYnab: 0,
@@ -75,7 +81,7 @@ export class Synchronizer {
         accountType,
         dateRange,
         transactionsFound: 0,
-        alreadyInYnab: 0,
+        skippedExists: 0,
         sentToYnab: 0,
         actuallyCreated: 0,
         rejectedByYnab: 0,
@@ -85,33 +91,57 @@ export class Synchronizer {
       };
     }
 
+    // Helper to format a transaction for the report
+    const formatTransaction = (t: any, status: TransactionStatus): SyncedTransaction => {
+      const displayAmount = accountType === 'CREDIT' ? -t.amount : t.amount;
+      return {
+        id: t.id,
+        date: typeof t.date === 'string' ? t.date.split('T')[0] : t.date,
+        description: t.description,
+        amount: t.amount,
+        displayAmount: displayAmount.toFixed(2),
+        status,
+      };
+    };
+
+    // Get existing YNAB transactions to check for duplicates
     const ynabTransactions = await this.ynabClient.getTransactions(ynabBudgetId, ynabAccountId, fromDate);
     const existingYnabImportIds = new Set(ynabTransactions.map(t => t.import_id));
 
-    const newTransactions = pluggyTransactions.results.filter(
-      t => !existingYnabImportIds.has(t.id)
-    );
+    // Separate transactions into those we'll skip and those we'll send
+    const skippedTransactions: SyncedTransaction[] = [];
+    const transactionsToSend: any[] = [];
 
-    const alreadyInYnab = pluggyTransactions.results.length - newTransactions.length;
+    for (const t of pluggyTransactions.results) {
+      if (existingYnabImportIds.has(t.id)) {
+        skippedTransactions.push(formatTransaction(t, 'skipped_exists'));
+      } else {
+        transactionsToSend.push(t);
+      }
+    }
 
-    if (newTransactions.length === 0) {
+    logger.info(`Found ${pluggyTransactions.results.length} transactions. Skipping ${skippedTransactions.length} (already in YNAB). Sending ${transactionsToSend.length} to YNAB.`);
+
+    // If nothing to send, return with skipped transactions
+    if (transactionsToSend.length === 0) {
       logger.info('All transactions already exist in YNAB.');
       return {
         accountName: targetAccount.name,
         accountType,
         dateRange,
         transactionsFound: pluggyTransactions.results.length,
-        alreadyInYnab,
+        skippedExists: skippedTransactions.length,
         sentToYnab: 0,
         actuallyCreated: 0,
         rejectedByYnab: 0,
-        transactions: [],
+        transactions: skippedTransactions,
         status: 'success',
         message: 'All transactions already in YNAB',
       };
     }
 
-    const ynabPayload: Partial<Transaction>[] = newTransactions.map(t => ({
+    // Send to YNAB
+    const ynabPayload: Partial<Transaction>[] = transactionsToSend.map(t => ({
       id: t.id,
       amount: t.amount,
       description: t.description,
@@ -119,33 +149,32 @@ export class Synchronizer {
       connectionId: ynabAccountId,
     }));
 
-    // Send to YNAB and get actual results
     const ynabResponse = await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload, accountType);
     const duplicateIdsFromYnab = new Set(ynabResponse.duplicateImportIds);
 
-    logger.info(`Sent ${newTransactions.length} to YNAB. Created: ${ynabResponse.transactionsCreated}, Rejected as duplicates: ${ynabResponse.duplicateImportIds.length}`);
+    logger.info(`Sent ${transactionsToSend.length} to YNAB. Created: ${ynabResponse.transactionsCreated}, Rejected as duplicates: ${ynabResponse.duplicateImportIds.length}`);
+
+    // Format sent transactions with their actual status from YNAB
+    const sentTransactions: SyncedTransaction[] = transactionsToSend.map(t => {
+      const wasRejected = duplicateIdsFromYnab.has(t.id);
+      return formatTransaction(t, wasRejected ? 'rejected_duplicate' : 'created');
+    });
+
+    // Combine all transactions for the report
+    const allTransactions = [...skippedTransactions, ...sentTransactions];
+    // Sort by date descending
+    allTransactions.sort((a, b) => b.date.localeCompare(a.date));
 
     return {
       accountName: targetAccount.name,
       accountType,
       dateRange,
       transactionsFound: pluggyTransactions.results.length,
-      alreadyInYnab,
-      sentToYnab: newTransactions.length,
+      skippedExists: skippedTransactions.length,
+      sentToYnab: transactionsToSend.length,
       actuallyCreated: ynabResponse.transactionsCreated,
       rejectedByYnab: ynabResponse.duplicateImportIds.length,
-      transactions: newTransactions.map(t => {
-        // For CREDIT accounts, invert the sign (same logic as ynab-client.ts)
-        const displayAmount = accountType === 'CREDIT' ? -t.amount : t.amount;
-        const wasRejected = duplicateIdsFromYnab.has(t.id);
-        return {
-          date: typeof t.date === 'string' ? t.date.split('T')[0] : t.date,
-          description: t.description,
-          amount: t.amount,
-          displayAmount: displayAmount.toFixed(2),
-          status: wasRejected ? 'duplicate' as const : 'created' as const,
-        };
-      }),
+      transactions: allTransactions,
       status: 'success',
     };
   }
