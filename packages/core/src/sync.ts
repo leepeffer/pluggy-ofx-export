@@ -1,14 +1,24 @@
 import { Client as PluggyClient, YnabClient, Transaction } from '.';
 import { logger } from './logger';
 
+export interface SyncedTransaction {
+  date: string;
+  description: string;
+  amount: number;
+  displayAmount: string;
+  status: 'created' | 'duplicate';
+}
+
 export interface SyncResult {
   accountName: string;
   accountType: 'BANK' | 'CREDIT';
   dateRange: { from: string; to: string };
   transactionsFound: number;
-  duplicatesSkipped: number;
-  transactionsSynced: number;
-  transactions: { date: string; description: string; amount: number; displayAmount: string }[];
+  alreadyInYnab: number;  // Duplicates detected before sending to YNAB
+  sentToYnab: number;     // Transactions we attempted to send
+  actuallyCreated: number; // What YNAB actually created
+  rejectedByYnab: number;  // What YNAB rejected as duplicates
+  transactions: SyncedTransaction[];
   status: 'success' | 'skipped' | 'error';
   message?: string;
 }
@@ -44,8 +54,10 @@ export class Synchronizer {
         accountType,
         dateRange,
         transactionsFound: 0,
-        duplicatesSkipped: 0,
-        transactionsSynced: 0,
+        alreadyInYnab: 0,
+        sentToYnab: 0,
+        actuallyCreated: 0,
+        rejectedByYnab: 0,
         transactions: [],
         status: 'skipped',
         message: `No ${accountType} account found in Pluggy item`,
@@ -57,14 +69,16 @@ export class Synchronizer {
     const pluggyTransactions = await this.pluggyClient.fetchTransactions(targetAccount.id, dateRange);
 
     if (pluggyTransactions.results.length === 0) {
-      logger.info('No new transactions to sync.');
+      logger.info('No transactions found in date range.');
       return {
         accountName: targetAccount.name,
         accountType,
         dateRange,
         transactionsFound: 0,
-        duplicatesSkipped: 0,
-        transactionsSynced: 0,
+        alreadyInYnab: 0,
+        sentToYnab: 0,
+        actuallyCreated: 0,
+        rejectedByYnab: 0,
         transactions: [],
         status: 'success',
         message: 'No transactions found in date range',
@@ -78,20 +92,22 @@ export class Synchronizer {
       t => !existingYnabImportIds.has(t.id)
     );
 
-    const duplicatesSkipped = pluggyTransactions.results.length - newTransactions.length;
+    const alreadyInYnab = pluggyTransactions.results.length - newTransactions.length;
 
     if (newTransactions.length === 0) {
-      logger.info('No new transactions to sync.');
+      logger.info('All transactions already exist in YNAB.');
       return {
         accountName: targetAccount.name,
         accountType,
         dateRange,
         transactionsFound: pluggyTransactions.results.length,
-        duplicatesSkipped,
-        transactionsSynced: 0,
+        alreadyInYnab,
+        sentToYnab: 0,
+        actuallyCreated: 0,
+        rejectedByYnab: 0,
         transactions: [],
         status: 'success',
-        message: 'All transactions already synced',
+        message: 'All transactions already in YNAB',
       };
     }
 
@@ -103,25 +119,31 @@ export class Synchronizer {
       connectionId: ynabAccountId,
     }));
 
-    await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload, accountType);
+    // Send to YNAB and get actual results
+    const ynabResponse = await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload, accountType);
+    const duplicateIdsFromYnab = new Set(ynabResponse.duplicateImportIds);
 
-    logger.info(`Synced ${newTransactions.length} transactions.`);
+    logger.info(`Sent ${newTransactions.length} to YNAB. Created: ${ynabResponse.transactionsCreated}, Rejected as duplicates: ${ynabResponse.duplicateImportIds.length}`);
 
     return {
       accountName: targetAccount.name,
       accountType,
       dateRange,
       transactionsFound: pluggyTransactions.results.length,
-      duplicatesSkipped,
-      transactionsSynced: newTransactions.length,
+      alreadyInYnab,
+      sentToYnab: newTransactions.length,
+      actuallyCreated: ynabResponse.transactionsCreated,
+      rejectedByYnab: ynabResponse.duplicateImportIds.length,
       transactions: newTransactions.map(t => {
         // For CREDIT accounts, invert the sign (same logic as ynab-client.ts)
         const displayAmount = accountType === 'CREDIT' ? -t.amount : t.amount;
+        const wasRejected = duplicateIdsFromYnab.has(t.id);
         return {
           date: typeof t.date === 'string' ? t.date.split('T')[0] : t.date,
           description: t.description,
           amount: t.amount,
           displayAmount: displayAmount.toFixed(2),
+          status: wasRejected ? 'duplicate' as const : 'created' as const,
         };
       }),
       status: 'success',

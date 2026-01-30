@@ -13,6 +13,11 @@ export interface YnabAccount {
   name: string;
 }
 
+export interface CreateTransactionsResponse {
+  transactionsCreated: number;
+  duplicateImportIds: string[];
+}
+
 export class YnabClient {
   private client: AxiosInstance;
 
@@ -35,7 +40,7 @@ export class YnabClient {
     return response.data.data.accounts;
   }
 
-  async createTransactions(budgetId: string, accountId: string, transactions: Partial<Transaction>[], accountType: 'BANK' | 'CREDIT') {
+  async createTransactions(budgetId: string, accountId: string, transactions: Partial<Transaction>[], accountType: 'BANK' | 'CREDIT'): Promise<CreateTransactionsResponse> {
     const ynabTransactions = transactions.map(t => {
       let amount = t.amount ? Math.round(t.amount * 1000) : 0;
       
@@ -57,9 +62,14 @@ export class YnabClient {
       };
     });
 
-    return this.client.post(`/budgets/${budgetId}/transactions`, {
+    const response = await this.client.post(`/budgets/${budgetId}/transactions`, {
       transactions: ynabTransactions,
     });
+
+    return {
+      transactionsCreated: response.data.data.transactions?.length || 0,
+      duplicateImportIds: response.data.data.duplicate_import_ids || [],
+    };
   }
 
   async getTransactions(budgetId: string, accountId: string, sinceDate?: Date): Promise<any[]> {

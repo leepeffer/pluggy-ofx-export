@@ -13,8 +13,10 @@ interface SyncSummary {
   dateRange: { from: string; to: string };
   totalAccounts: number;
   totalTransactionsFound: number;
-  totalDuplicatesSkipped: number;
-  totalTransactionsSynced: number;
+  totalAlreadyInYnab: number;    // Duplicates detected before sending
+  totalSentToYnab: number;       // What we attempted to send
+  totalActuallyCreated: number;  // What YNAB actually created
+  totalRejectedByYnab: number;   // What YNAB rejected as duplicates
   results: (SyncResult & { configName: string })[];
 }
 
@@ -63,8 +65,10 @@ export async function sync() {
     dateRange,
     totalAccounts: results.length,
     totalTransactionsFound: results.reduce((sum, r) => sum + r.transactionsFound, 0),
-    totalDuplicatesSkipped: results.reduce((sum, r) => sum + r.duplicatesSkipped, 0),
-    totalTransactionsSynced: results.reduce((sum, r) => sum + r.transactionsSynced, 0),
+    totalAlreadyInYnab: results.reduce((sum, r) => sum + r.alreadyInYnab, 0),
+    totalSentToYnab: results.reduce((sum, r) => sum + r.sentToYnab, 0),
+    totalActuallyCreated: results.reduce((sum, r) => sum + r.actuallyCreated, 0),
+    totalRejectedByYnab: results.reduce((sum, r) => sum + r.rejectedByYnab, 0),
     results,
   };
 
