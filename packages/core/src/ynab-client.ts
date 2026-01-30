@@ -40,24 +40,26 @@ export class YnabClient {
     return response.data.data.accounts;
   }
 
-  async createTransactions(budgetId: string, accountId: string, transactions: Partial<Transaction>[], accountType: 'BANK' | 'CREDIT'): Promise<CreateTransactionsResponse> {
+  /** Payload can include optional importId (e.g. for re-import after YNAB reject). */
+  async createTransactions(
+    budgetId: string,
+    accountId: string,
+    transactions: (Partial<Transaction> & { importId?: string })[],
+    accountType: 'BANK' | 'CREDIT'
+  ): Promise<CreateTransactionsResponse> {
     const ynabTransactions = transactions.map(t => {
       let amount = t.amount ? Math.round(t.amount * 1000) : 0;
-      
-      // For CREDIT accounts, invert the amount so expenses show as outflows
+
       if (accountType === 'CREDIT') {
         amount = -amount;
       }
-      
+
+      const importId = t.importId ?? t.id;
       return {
-        // YNAB API requires amount in milliunits (integer)
-        amount: amount,
+        amount,
         date: t.date?.toISOString().split('T')[0],
-        // Move description to payee field instead of memo
         payee_name: t.description,
-        // import_id is used for duplicate detection
-        import_id: t.id,
-        // YNAB API requires account field
+        import_id: importId,
         account_id: accountId,
       };
     });

@@ -1,10 +1,25 @@
 import { Client as PluggyClient, YnabClient, Transaction } from '.';
 import { logger } from './logger';
 
-export type TransactionStatus = 
-  | 'skipped_exists'      // We detected it already exists in YNAB (import_id match)
+/** Suffix we use for re-import when YNAB rejects duplicate (e.g. transaction was deleted in YNAB). */
+export const REIMPORT_IMPORT_ID_SUFFIX = '-reimport';
+
+/**
+ * Transaction-level status after sync.
+ *
+ * Duplicate handling:
+ * 1. **Our pre-check (skipped_exists)**: We GET existing YNAB transactions, build the set of
+ *    Pluggy ids we already have (import_id and import_id without "-reimport" suffix), and skip
+ *    sending those.
+ * 2. **YNAB reject (rejected_duplicate)**: We send; YNAB returns duplicate_import_ids when the
+ *    import_id was already used (e.g. by a deleted transaction). We retry those with
+ *    import_id = id + "-reimport" so they can be re-imported; success is marked created_reimport.
+ */
+export type TransactionStatus =
+  | 'skipped_exists'      // We detected it already exists in YNAB
   | 'created'             // Sent to YNAB and successfully created
-  | 'rejected_duplicate'; // Sent to YNAB but rejected (import_id already used, even if deleted)
+  | 'created_reimport'    // Rejected as duplicate (e.g. deleted in YNAB), retried with -reimport and created
+  | 'rejected_duplicate'; // Sent to YNAB but rejected and retry did not create (should be rare)
 
 export interface SyncedTransaction {
   id: string;
@@ -23,8 +38,8 @@ export interface SyncResult {
   skippedExists: number;    // We detected these already exist in YNAB
   sentToYnab: number;       // Transactions we attempted to send
   actuallyCreated: number;  // What YNAB actually created
-  rejectedByYnab: number;   // What YNAB rejected as duplicates
-  transactions: SyncedTransaction[];  // ALL transactions with their status
+  rejectedByYnab: number;   // What YNAB rejected and we could not re-import
+  transactions: SyncedTransaction[];
   status: 'success' | 'skipped' | 'error';
   message?: string;
 }
@@ -104,16 +119,22 @@ export class Synchronizer {
       };
     };
 
-    // Get existing YNAB transactions to check for duplicates
+    // Our duplicate pre-check: GET existing YNAB transactions. Consider a Pluggy transaction
+    // "already in YNAB" if we have import_id = t.id or import_id = t.id + REIMPORT_IMPORT_ID_SUFFIX.
     const ynabTransactions = await this.ynabClient.getTransactions(ynabBudgetId, ynabAccountId, fromDate);
-    const existingYnabImportIds = new Set(ynabTransactions.map(t => t.import_id));
+    const existingPluggyIdsWeHave = new Set<string>();
+    for (const imp of ynabTransactions.map(t => t.import_id).filter(Boolean) as string[]) {
+      existingPluggyIdsWeHave.add(imp);
+      if (imp.endsWith(REIMPORT_IMPORT_ID_SUFFIX)) {
+        existingPluggyIdsWeHave.add(imp.slice(0, -REIMPORT_IMPORT_ID_SUFFIX.length));
+      }
+    }
 
-    // Separate transactions into those we'll skip and those we'll send
     const skippedTransactions: SyncedTransaction[] = [];
     const transactionsToSend: any[] = [];
 
     for (const t of pluggyTransactions.results) {
-      if (existingYnabImportIds.has(t.id)) {
+      if (existingPluggyIdsWeHave.has(t.id)) {
         skippedTransactions.push(formatTransaction(t, 'skipped_exists'));
       } else {
         transactionsToSend.push(t);
@@ -140,8 +161,8 @@ export class Synchronizer {
       };
     }
 
-    // Send to YNAB
-    const ynabPayload: Partial<Transaction>[] = transactionsToSend.map(t => ({
+    // Send to YNAB (first attempt uses Pluggy id as import_id)
+    const ynabPayload: (Partial<Transaction> & { importId?: string })[] = transactionsToSend.map(t => ({
       id: t.id,
       amount: t.amount,
       description: t.description,
@@ -149,25 +170,50 @@ export class Synchronizer {
       connectionId: ynabAccountId,
     }));
 
-    const ynabResponse = await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload, accountType);
+    let ynabResponse = await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, ynabPayload, accountType);
     const duplicateIdsFromYnab = new Set(ynabResponse.duplicateImportIds);
 
     logger.info(`Sent ${transactionsToSend.length} to YNAB. Created: ${ynabResponse.transactionsCreated}, Rejected as duplicates: ${ynabResponse.duplicateImportIds.length}`);
 
-    // Format sent transactions with their actual status from YNAB
+    // Re-import rejected transactions (e.g. deleted in YNAB) using a distinct import_id so YNAB accepts them
+    let retryDuplicateIds = new Set<string>();
+    if (duplicateIdsFromYnab.size > 0) {
+      const retryPayload = transactionsToSend
+        .filter(t => duplicateIdsFromYnab.has(t.id))
+        .map(t => ({
+          id: t.id,
+          amount: t.amount,
+          description: t.description,
+          date: t.date,
+          connectionId: ynabAccountId,
+          importId: t.id + REIMPORT_IMPORT_ID_SUFFIX,
+        }));
+      const retryResponse = await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, retryPayload, accountType);
+      retryDuplicateIds = new Set(retryResponse.duplicateImportIds);
+      ynabResponse = {
+        transactionsCreated: ynabResponse.transactionsCreated + retryResponse.transactionsCreated,
+        duplicateImportIds: Array.from(retryDuplicateIds),
+      };
+      logger.info(`Re-imported ${retryPayload.length} rejected txns with -reimport. Created: ${retryResponse.transactionsCreated}, Still rejected: ${retryResponse.duplicateImportIds.length}`);
+    }
+
+    // Format sent transactions: created, created_reimport (rejected then re-imported), or rejected_duplicate
     const sentTransactions: SyncedTransaction[] = transactionsToSend.map(t => {
       const wasRejected = duplicateIdsFromYnab.has(t.id);
-      return formatTransaction(t, wasRejected ? 'rejected_duplicate' : 'created');
+      if (!wasRejected) return formatTransaction(t, 'created');
+      const reimportId = t.id + REIMPORT_IMPORT_ID_SUFFIX;
+      const stillRejected = retryDuplicateIds.has(reimportId);
+      return formatTransaction(t, stillRejected ? 'rejected_duplicate' : 'created_reimport');
     });
 
-    // Combine all transactions for the report
     const allTransactions = [...skippedTransactions, ...sentTransactions];
-    // Sort by date descending (ensure dates are strings)
     allTransactions.sort((a, b) => {
       const dateA = String(a.date);
       const dateB = String(b.date);
       return dateB.localeCompare(dateA);
     });
+
+    const rejectedCount = sentTransactions.filter(tx => tx.status === 'rejected_duplicate').length;
 
     return {
       accountName: targetAccount.name,
@@ -177,7 +223,7 @@ export class Synchronizer {
       skippedExists: skippedTransactions.length,
       sentToYnab: transactionsToSend.length,
       actuallyCreated: ynabResponse.transactionsCreated,
-      rejectedByYnab: ynabResponse.duplicateImportIds.length,
+      rejectedByYnab: rejectedCount,
       transactions: allTransactions,
       status: 'success',
     };

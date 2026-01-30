@@ -56,6 +56,7 @@ jobs:
             const statusEmoji = {
               'skipped_exists': '⏭️ SKIPPED (exists)',
               'created': '✅ CREATED',
+              'created_reimport': '🔄 RE-IMPORTED (was deleted in YNAB)',
               'rejected_duplicate': '❌ REJECTED (dup)'
             };
             
