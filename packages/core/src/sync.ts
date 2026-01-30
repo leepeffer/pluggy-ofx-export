@@ -188,13 +188,19 @@ export class Synchronizer {
           connectionId: ynabAccountId,
           importId: t.id + REIMPORT_IMPORT_ID_SUFFIX,
         }));
-      const retryResponse = await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, retryPayload, accountType);
-      retryDuplicateIds = new Set(retryResponse.duplicateImportIds);
-      ynabResponse = {
-        transactionsCreated: ynabResponse.transactionsCreated + retryResponse.transactionsCreated,
-        duplicateImportIds: Array.from(retryDuplicateIds),
-      };
-      logger.info(`Re-imported ${retryPayload.length} rejected txns with -reimport. Created: ${retryResponse.transactionsCreated}, Still rejected: ${retryResponse.duplicateImportIds.length}`);
+      try {
+        const retryResponse = await this.ynabClient.createTransactions(ynabBudgetId, ynabAccountId, retryPayload, accountType);
+        retryDuplicateIds = new Set(retryResponse.duplicateImportIds);
+        ynabResponse = {
+          transactionsCreated: ynabResponse.transactionsCreated + retryResponse.transactionsCreated,
+          duplicateImportIds: Array.from(retryDuplicateIds),
+        };
+        logger.info(`Re-imported ${retryPayload.length} rejected txns with -reimport. Created: ${retryResponse.transactionsCreated}, Still rejected: ${retryResponse.duplicateImportIds.length}`);
+      } catch (err) {
+        // YNAB may return 400 for the retry batch (e.g. validation); treat all retried as still rejected so we still return a result and the summary is emitted
+        logger.warn(`Re-import retry failed: ${err instanceof Error ? err.message : String(err)}. Treating ${retryPayload.length} transactions as rejected_duplicate.`);
+        retryPayload.forEach(t => retryDuplicateIds.add(t.id + REIMPORT_IMPORT_ID_SUFFIX));
+      }
     }
 
     // Format sent transactions: created, created_reimport (rejected then re-imported), or rejected_duplicate

@@ -50,30 +50,51 @@ export async function sync() {
     to: toDate.toISOString().split('T')[0],
   };
 
-  for (const config of accountConfigs) {
-    const { name, pluggy_id, ynab_budget_id, ynab_account_id, type } = config;
-    logger.info(`Syncing account: ${name} (${type})`);
-    const result = await synchronizer.sync(pluggy_id, type, ynab_budget_id, ynab_account_id, fromDate);
-    results.push({ ...result, configName: name });
+  try {
+    for (const config of accountConfigs) {
+      const { name, pluggy_id, ynab_budget_id, ynab_account_id, type } = config;
+      logger.info(`Syncing account: ${name} (${type})`);
+      try {
+        const result = await synchronizer.sync(pluggy_id, type, ynab_budget_id, ynab_account_id, fromDate);
+        results.push({ ...result, configName: name });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error(`Sync failed for ${name}: ${message}`);
+        results.push({
+          accountName: name,
+          accountType: type,
+          dateRange: { from: dateRange.from, to: dateRange.to },
+          transactionsFound: 0,
+          skippedExists: 0,
+          sentToYnab: 0,
+          actuallyCreated: 0,
+          rejectedByYnab: 0,
+          transactions: [],
+          status: 'error',
+          message,
+          configName: name,
+        });
+      }
+    }
+  } finally {
+    // Always emit summary when we have any results so the workflow can show the report even if sync threw
+    if (results.length > 0) {
+      const summary: SyncSummary = {
+        timestamp: new Date().toISOString(),
+        dateRange,
+        totalAccounts: results.length,
+        totalTransactionsFound: results.reduce((sum, r) => sum + r.transactionsFound, 0),
+        totalSkippedExists: results.reduce((sum, r) => sum + r.skippedExists, 0),
+        totalSentToYnab: results.reduce((sum, r) => sum + r.sentToYnab, 0),
+        totalActuallyCreated: results.reduce((sum, r) => sum + r.actuallyCreated, 0),
+        totalRejectedByYnab: results.reduce((sum, r) => sum + r.rejectedByYnab, 0),
+        results,
+      };
+      console.log('::SYNC_SUMMARY_START::');
+      console.log(JSON.stringify(summary, null, 2));
+      console.log('::SYNC_SUMMARY_END::');
+    }
   }
 
   logger.info('Synchronization complete.');
-
-  // Output summary as JSON for GitHub Actions
-  const summary: SyncSummary = {
-    timestamp: new Date().toISOString(),
-    dateRange,
-    totalAccounts: results.length,
-    totalTransactionsFound: results.reduce((sum, r) => sum + r.transactionsFound, 0),
-    totalSkippedExists: results.reduce((sum, r) => sum + r.skippedExists, 0),
-    totalSentToYnab: results.reduce((sum, r) => sum + r.sentToYnab, 0),
-    totalActuallyCreated: results.reduce((sum, r) => sum + r.actuallyCreated, 0),
-    totalRejectedByYnab: results.reduce((sum, r) => sum + r.rejectedByYnab, 0),
-    results,
-  };
-
-  // Output the summary marker and JSON for the workflow to parse
-  console.log('::SYNC_SUMMARY_START::');
-  console.log(JSON.stringify(summary, null, 2));
-  console.log('::SYNC_SUMMARY_END::');
 }
